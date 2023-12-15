@@ -1,9 +1,11 @@
+// Board.java
 package main.java.com.utmunchkin.Interface;
 
+import main.java.com.utmunchkin.players.Player;
+import main.java.com.utmunchkin.players.ListOfPlayer;
 import main.java.com.utmunchkin.cards.Dungeon;
 import main.java.com.utmunchkin.cards.Treasure;
 import main.java.com.utmunchkin.gameplay.Play;
-import main.java.com.utmunchkin.players.ListOfPlayer;
 
 import javax.swing.*;
 import java.awt.*;
@@ -48,6 +50,9 @@ public class Board extends JFrame {
         pack();
         setLocationRelativeTo(null); // Center the frame
         setVisible(true);
+
+        // Mise à jour initiale des statistiques des joueurs
+        updatePlayerStats(game.getPlayers());
     }
 
     private void initializeDrawButtons(JPanel panel) {
@@ -57,7 +62,7 @@ public class Board extends JFrame {
         drawDungeonButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                // Handle drawing dungeon card logic here
+                // Gérer ici la logique de tirage de carte Donjon
                 System.out.println("Dungeon Card drawn!");
                 updateInfo("Dungeon Card drawn!");
             }
@@ -66,7 +71,7 @@ public class Board extends JFrame {
         drawTreasureButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                // Handle drawing treasure card logic here
+                // Gérer ici la logique de tirage de carte Trésor
                 System.out.println("Treasure Card drawn!");
                 updateInfo("Treasure Card drawn!");
             }
@@ -84,6 +89,13 @@ public class Board extends JFrame {
         }
     }
 
+    public void updatePlayerStats(ListOfPlayer players) {
+        for (int i = 0; i < playerFrames.size(); i++) {
+            PlayerFrame playerFrame = playerFrames.get(i);
+            Player player = players.getPlayer(i);
+            playerFrame.updateStats(player.getName(), player.getLevel(), player.getLives(), player.getMoney(), player.getCurse());
+        }
+    }
 
     public void updateInfo(String message) {
         infoTextArea.append(message + "\n");
@@ -110,6 +122,30 @@ public class Board extends JFrame {
 
     public int getChoice() {
         return choice;
+    }
+
+    public String yesOrNoDialog(String message) {
+        // Affiche une boîte de dialogue avec les boutons "Oui" et "Non"
+        int choix = JOptionPane.showConfirmDialog(null, message, "Question", JOptionPane.YES_NO_OPTION);
+
+        // Vérifie le choix de l'utilisateur et renvoie "Oui" ou "Non"
+        if (choix == JOptionPane.YES_OPTION) {
+            System.out.println("Vous avez choisi Oui.");
+            return "Oui";
+        } else {
+            System.out.println("Vous avez choisi Non.");
+            return "Non";
+        }
+    }
+
+    public void showMessageDialog(String string) {
+    }
+
+    public void showPlayerStats(Player player) {
+    }
+
+    public int showYesNoDialog(String string) {
+        return 0;
     }
 
 

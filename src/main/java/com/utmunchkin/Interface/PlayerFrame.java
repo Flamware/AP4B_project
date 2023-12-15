@@ -1,11 +1,7 @@
 package main.java.com.utmunchkin.Interface;
 
 import main.java.com.utmunchkin.cards.Card;
-import main.java.com.utmunchkin.cards.Dungeon;
-import main.java.com.utmunchkin.cards.Treasure;
-import main.java.com.utmunchkin.gameplay.Play;
 import main.java.com.utmunchkin.players.ListOfPlayer;
-import main.java.com.utmunchkin.players.Player;
 
 import javax.swing.*;
 import java.awt.*;
@@ -27,7 +23,7 @@ public class PlayerFrame extends JPanel {
         setBorder(BorderFactory.createTitledBorder(playerName));
 
         // Assuming listOfPlayer is an instance of ListOfPlayer
-        List<Card> hand = listOfPlayer.getPlayer(playerName).getHand();
+        List<Card> hand = listOfPlayer.getPlayer(playerIndex).getHand();
 
         setBackground(getUniqueColor(playerIndex));
 
@@ -41,12 +37,31 @@ public class PlayerFrame extends JPanel {
             cardButton.addActionListener(new CardButtonListener(cardName));
         }
     }
+
     private Color getUniqueColor(int playerIndex) {
         int red = playerIndex * 50 % 255;
         int green = playerIndex * 80 % 255;
         int blue = playerIndex * 120 % 255;
         return new Color(red, green, blue);
     }
+
+    public void updatePlayerHand(List<Card> updatedHand) {
+        removeAll(); // Clear existing buttons
+
+        for (int i = 0; i < updatedHand.size(); i++) {
+            String cardName = updatedHand.get(i).getCardName();
+            JButton cardButton = new JButton(cardName);
+            cardButton.setEnabled(false);
+            cardButtons.add(cardButton);
+            add(cardButton);
+
+            cardButton.addActionListener(new CardButtonListener(cardName));
+        }
+
+        revalidate(); // Refresh the layout
+        repaint();    // Repaint the panel
+    }
+
     private class CardButtonListener implements ActionListener {
         private String cardName;
 
@@ -58,5 +73,12 @@ public class PlayerFrame extends JPanel {
         public void actionPerformed(ActionEvent e) {
             // Handle the button click (you can implement specific behavior here)
         }
+    }
+
+    public void updateStats(String name, int level, int lives, double money, boolean curse) {
+        setBorder(BorderFactory.createTitledBorder(name + " - Level: " + level + " - Lives: " + lives + " - Money: " + money + " - Curse: " + curse));
+
+        revalidate(); // Refresh the layout
+        repaint();    // Repaint the panel
     }
 }

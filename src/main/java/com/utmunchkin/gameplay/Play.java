@@ -3,12 +3,16 @@ package main.java.com.utmunchkin.gameplay;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Scanner;
+//import java.util.Scanner;
+
+import javax.swing.JOptionPane;
 
 import main.java.com.utmunchkin.Rules;
 import main.java.com.utmunchkin.cards.Card;
 import main.java.com.utmunchkin.cards.CardData.CardInfo;
-import main.java.com.utmunchkin.cards.Dungeon.Monster;
+import main.java.com.utmunchkin.cards.CardData.CardType;
+import main.java.com.utmunchkin.cards.Card.Monster;
+import main.java.com.utmunchkin.cards.Card.Curse;
 import main.java.com.utmunchkin.cards.CardData;
 import main.java.com.utmunchkin.cards.CardEffects;
 import main.java.com.utmunchkin.cards.Cards;
@@ -27,9 +31,11 @@ public class Play implements CardsActions {
     private boolean gameWon;
     private Cards cardsOfGame;
     private Dungeon dungeonCard;
+    //Dungeon drawnCard = new Dungeon();
     private Treasure treasureCard;
     private Rules rules;
     private Board board;
+    private Curse curse;
 
     // Default constructor without specifying the first player index
     public Play(ListOfPlayer players) {
@@ -55,6 +61,30 @@ public class Play implements CardsActions {
         initializeGame();
         while (!gameWon) {
             Player currentPlayer = players.getPlayer(currentPlayerIndex);
+            board.showMessageDialog("Tour du joueur: " + currentPlayer.getName());
+
+            if (currentPlayer.getCurse()) {
+                int response = board.showYesNoDialog("Payer 5 unités d'argent ou perdre 1 vie pour lever la malédiction ?");
+                if (response == JOptionPane.YES_OPTION) {
+                    if (currentPlayer.getMoney() >= 5) {
+                        currentPlayer.addMoney(-5);
+                        currentPlayer.setCurse(false);
+                        board.showMessageDialog("La malédiction a été levée en échange de 5 unités d'argent.");
+                    } else {
+                        if (currentPlayer.getLives() > 1) {
+                            currentPlayer.addLives(-1);
+                            currentPlayer.setCurse(false);
+                            board.showMessageDialog("La malédiction a été levée en perdant 1 vie.");
+                        } else {
+                            board.showMessageDialog("Vous n'avez pas suffisamment d'argent ni de vies pour lever la malédiction.");
+                            currentPlayer.setCurse(true);
+                        }
+                    }
+                } else {
+                    currentPlayer.setCurse(true);
+                }
+            }
+
             openDoorPhase(currentPlayer);
 
             if (!currentPlayer.hasEncounteredMonster()) {
@@ -69,7 +99,17 @@ public class Play implements CardsActions {
 
             checkGameWon(currentPlayer);
 
+            // Mettez à jour l'affichage des statistiques des joueurs après chaque action
+            updatePlayersStats();
+            
             currentPlayerIndex = (currentPlayerIndex + 1) % players.getSize();
+        }
+    }
+
+    private void updatePlayersStats() {
+        // Affichez les statistiques des joueurs sur l'interface utilisateur
+        for (Player player : players.getPlayers()) {
+            board.showPlayerStats(player);
         }
     }
 
@@ -110,23 +150,26 @@ public class Play implements CardsActions {
         CardInfo cardInfo = Card.getCardInfo(cardName);
     
         if (cardInfo.getCardType() == CardData.CardType.MONSTER) {
-            Dungeon.Monster monster = (Dungeon.Monster) dungeonCard;
+            System.out.println("monster");
+            Monster monster = (Monster) dungeonCard;
             handleMonsterEncounter(player, monster);
         } else if (cardInfo.getCardType() == CardData.CardType.CURSE) {
-            Dungeon.Curse curse = (Dungeon.Curse) dungeonCard;
+            System.out.println("curse");
+            Curse curse = (Curse) dungeonCard;
             handleCurse(player, curse);
         } else {
+            System.out.println("other");
             handleNonMonsterCard(player, dungeonCard, cardInfo);
         }
     }
 
-    private void handleMonsterEncounter(Player player, Dungeon.Monster monster) {
+    private void handleMonsterEncounter(Player player, Monster monster) {
         System.out.println("It's a monster! " + player.getName() + " must face it.");
         player.setHasEncounteredMonster(true);
         faceMonster(player, monster);
     }
 
-    private void handleCurse(Player player, Dungeon.Curse curse) {
+    private void handleCurse(Player player, Curse curse) {
         System.out.println("It's a curse! " + player.getName() + " must suffer its effects.");
         sufferCurse(player, curse);
     }
@@ -135,24 +178,20 @@ public class Play implements CardsActions {
         System.out.println("It's not a monster or curse. " + player.getName() + " adds it to their hand.");
         player.addToHand(dungeonCard);
 
+        int chx;
+        do {
+            System.out.println("select a card from your hand");
+            chx = board.getChoice();
+        } while (chx <0 || chx > player.getHand().size() - 1);
+
         String effectFunctionName = cardInfo.getEffectFunctionName();
         if (effectFunctionName != null && !effectFunctionName.isEmpty()) {
-            applySpecialEffect(player, effectFunctionName);
+            applySpecialEffect(player, player.getHand().get(chx), effectFunctionName);
         }
     }
 
-    private void applySpecialEffect(Player player, String effectFunctionName) {
-        switch (effectFunctionName) {
-            case "applySwordEffect":
-                CardEffects.applySwordEffect(player);
-                break;
-            case "applyPotionEffect":
-                CardEffects.applyPotionEffect(player);
-                break;
-            default:
-                System.out.println("Unknown special effect: " + effectFunctionName);
-                break;
-        }
+    private void applySpecialEffect(Player player, Card card, String effectFunctionName) {
+        CardEffects.applyEffect(card, player, effectFunctionName);
     }
 
     private void openDoorPhase(Player player) {
@@ -162,20 +201,28 @@ public class Play implements CardsActions {
     private void lootTheRoomPhase(Player player) {
         System.out.println("Vous n'avez rencontré aucun monstre en ouvrant la porte.");
         System.out.println("Vous pouvez piller la salle.");
-        Dungeon drawnCard = new Dungeon();
+        Dungeon drawnCard = dungeonCard;
         player.addToHand(drawnCard.removeFirstFromDeck());
         System.out.println(player.getName() + " a tiré une carte Donjon face cachée : " + drawnCard.getCardName());
     }
 
     private void lookForTroublePhase(Player player) {
         List<Card> playerHand = player.getHand();
-        if (!playerHand.isEmpty()) {
-            board.updateInfo("Vous n'avez croisé aucun monstre en ouvrant la porte.");
+        List<Card> monstersInHand = new ArrayList<>();
+        board.updateInfo("Vous n'avez croisé aucun monstre en ouvrant la porte.");
+        for (Card card : playerHand){
+            if (card.getInfo().getCardType() == CardType.MONSTER){
+                monstersInHand.add(card);
+            }
+        }
+        if (!playerHand.isEmpty() && !monstersInHand.isEmpty()) {
+            
             board.updateInfo("Vous pouvez affronter un monstre de votre main :");
 
             displayPlayerHand(playerHand);
+            System.out.println(monstersInHand);
             
-            Dungeon.Monster selectedMonster = (Monster) selectMonsterFromHand(playerHand);
+            Card selectedMonster = selectMonsterFromHand(playerHand);
 
             faceMonster(player, selectedMonster);
             
@@ -183,6 +230,8 @@ public class Play implements CardsActions {
         } else {
             board.updateInfo("Vous n'avez aucun monstre dans votre main.");
         }
+
+        System.out.println("Fin du combat");
     }
 
     private void displayPlayerHand(List<Card> playerHand) {
@@ -207,23 +256,22 @@ public class Play implements CardsActions {
         player.setHasEncounteredMonster(false);
     }
 
-    private void faceMonster(Player player, Dungeon.Monster monster) {
+    private void faceMonster(Player player, Card selectedMonster) {
         int playerCombatStrength = player.getLevel();
 
-        System.out.println("Combat details:");
-        System.out.println("Player Combat Strength: " + playerCombatStrength);
-        System.out.println("Monster Combat Strength: " + monster.getMonsterCombatStrength());
+        board.showMessageDialog("Combat details:\n" +
+                "Player Combat Strength: " + playerCombatStrength + "\n" +
+                "Monster Combat Strength: " + selectedMonster.getMonsterCombatStrength());
 
-        if (playerCombatStrength >= monster.getMonsterCombatStrength()) {
-            System.out.println("You defeat the monster!");
-
-            int levelsGained = Math.min(2, monster.getLevels());
+        if (playerCombatStrength >= selectedMonster.getMonsterCombatStrength()) {
+            board.showMessageDialog("You defeat the monster!");
+            int levelsGained = Math.min(2, selectedMonster.getLevels());
             player.gainLevel(levelsGained);
-            int treasuresGained = monster.getTreasures();
+            int treasuresGained = selectedMonster.getTreasures();
             gainTreasures(treasuresGained, player);
-            System.out.println("Gained " + levelsGained + " level(s) and " + treasuresGained + " treasure(s).");
+            board.showMessageDialog("Gained " + levelsGained + " level(s) and " + treasuresGained + " treasure(s).");
         } else {
-            System.out.println("You must flee from the monster!");
+            board.showMessageDialog("You must flee from the monster!");
             player.loseLevel(1);
         }
     }
@@ -243,32 +291,35 @@ public class Play implements CardsActions {
         return treasureCards;
     }
 
-    private void sufferCurse(Player player, Dungeon.Curse curse) {
-        // TODO: Implement logic for suffering the curse
+    private void sufferCurse(Player player, Curse curse) {
+        player.setCurse(true);
     }
 
     private void charityPhase(Player currentPlayer, ListOfPlayer allPlayers) {
         if (currentPlayer.getHand().size() > 5) {
             System.out.println("Munchkin : La charité");
 
-            while (currentPlayer.getHand().size() > 5) {
+            int i = 0;
+            while (/*currentPlayer.getHand().size() > 5*/ i < 2) {
                 playExcessCard(currentPlayer);
+                i++;
             }
 
             Player lowestLevelPlayer = findPlayerWithLowestLevel(allPlayers);
 
             if (lowestLevelPlayer != null) {
-                giveExcessCards(currentPlayer, lowestLevelPlayer);
+                giveExcessCards(currentPlayer, players);
             }
         }
     }
 
     private void playExcessCard(Player player) {
-        List<Card> playerHand = player.getHand();
-        if (!playerHand.isEmpty()) {
-            Card cardToPlay = playerHand.get(0);
-            playCard(cardToPlay, player);
+        
+        if (!players.getPlayer(currentPlayerIndex).getHand().isEmpty()) {
+            Card cardToPlay = players.getPlayer(currentPlayerIndex).getFromHand(0);
             System.out.println(player.getName() + " a joué la carte : " + cardToPlay.getCardName());
+            playCard(cardToPlay, player);
+            
         }
     }
 
@@ -276,7 +327,8 @@ public class Play implements CardsActions {
         String effectFunctionName = cardToPlay.getInfo().getEffectFunctionName();
     
         if (effectFunctionName != null && !effectFunctionName.isEmpty()) {
-            applySpecialEffect(curPlayer, effectFunctionName);
+            CardEffects.applyEffect(cardToPlay, curPlayer, effectFunctionName);
+            System.out.println("played");
         } else {
             System.out.println("No special effect for card: " + cardToPlay.getCardName());
         }
@@ -290,13 +342,53 @@ public class Play implements CardsActions {
                 .orElse(null);
     }
 
-    private void giveExcessCards(Player donor, Player recipient) {
+    private void giveExcessCards(Player donor, ListOfPlayer players2) {
         List<Card> excessCards = donor.getHand().subList(5, donor.getHand().size());
-        recipient.addToHand(excessCards);
-        donor.removeFromHand(excessCards);
 
-        System.out.println(donor.getName() + " a donné les cartes excédentaires à " + recipient.getName());
+        // Demandez au joueur à qui il souhaite donner les cartes excédentaires
+        Player recipient = askPlayerForRecipient(players2);
+
+        // Assurez-vous qu'un joueur a été sélectionné
+        if (recipient != null) {
+            // Effectuez le transfert de cartes
+            recipient.addToHand(excessCards);
+            donor.removeFromHand(excessCards);
+
+            System.out.println(donor.getName() + " a donné les cartes excédentaires à " + recipient.getName());
+        } else {
+            System.out.println("Le joueur n'a pas sélectionné de destinataire. Aucun transfert effectué.");
+        }
     }
+
+    private Player askPlayerForRecipient(ListOfPlayer players2) {
+        // Créez un tableau de noms de joueurs
+        String[] playerNames = new String[players2.getSize()];
+        for (int i = 0; i < players2.getSize(); i++) {
+            playerNames[i] = players2.getPlayer(i).getName();
+        }
+
+        // Affichez une boîte de dialogue pour demander au joueur à qui donner les cartes excédentaires
+        String selectedPlayer = (String) JOptionPane.showInputDialog(
+                null,
+                "À qui souhaitez-vous donner vos cartes excédentaires ?",
+                "Sélectionnez le destinataire",
+                JOptionPane.QUESTION_MESSAGE,
+                null,
+                playerNames,
+                playerNames[0]
+        );
+
+        // Recherchez le joueur sélectionné dans la liste
+        for (Player player : players.getPlayers()) {
+            if (player.getName().equals(selectedPlayer)) {
+                return player;
+            }
+        }
+
+        // Aucun joueur sélectionné
+        return null;
+    }
+
     //getters and setters
     public int getFirstPlayerIndex() {
         return firstPlayer;

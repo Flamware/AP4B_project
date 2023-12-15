@@ -15,7 +15,7 @@ import main.java.com.utmunchkin.cards.CardData.TreasureType;
 public class CardData {
 
     public enum CardType {
-        RACE, CLASS, OBJECT, MONSTER, CURSE, TREASURE, DUNGEON
+        /*RACE, CLASS, OBJECT, */MONSTER, CURSE, TREASURE, DUNGEON
     }
 
     public enum TreasureType {

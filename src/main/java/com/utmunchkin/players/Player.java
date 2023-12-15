@@ -1,14 +1,23 @@
 package main.java.com.utmunchkin.players;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
+import main.java.com.utmunchkin.Constant;
+import main.java.com.utmunchkin.Interface.Board;
 import main.java.com.utmunchkin.cards.Card;
 import main.java.com.utmunchkin.cards.Cards;
+import main.java.com.utmunchkin.cards.CardData.TreasureType;
 
 public class Player extends ListOfPlayer {
     private String name;
     private int score;
+    private int lives;
+    private double money;
+    private int attackForce;
+    private int defense;
+    private List<Card> equipedObjects;
     private int turn;
     private int number;
     private List<Card> hand; // Use List interface instead of ArrayList
@@ -19,12 +28,21 @@ public class Player extends ListOfPlayer {
     private String gender;
 
     private boolean hasEncounteredMonster;
+    private Board board;
+    private int equipedObjectsSize;
+    private boolean isCursed;
+    private boolean isdead;
 
     // Constructors
 
     public Player(String name, int number) {
         this.name = name;
         this.score = 0;
+        this.lives = Constant.MAX_INITIAL_PLAYERS_LIVES;
+        this.money = Constant.MAX_INITIAL_PLAYERS_MONEY;
+        this.attackForce = Constant.MAX_INITIAL_PLAYERS_ATTACK;
+        this.defense = Constant.MAX_INITIAL_PLAYERS_DEFENSE;
+        this.equipedObjects = new ArrayList<>();
         this.turn = 0;
         this.number = number;
         this.hand = new ArrayList<>(); // Initialize hand
@@ -36,6 +54,8 @@ public class Player extends ListOfPlayer {
         this.gender = "Player Defined";
 
         this.hasEncounteredMonster = false;
+        this.isCursed = false;
+        this.isdead = false;
     }
 
     public Player(String name, int number, Cards cardDeck, int numberOfInitialCardsForEachDeck) {
@@ -50,17 +70,78 @@ public class Player extends ListOfPlayer {
                   String race, String playerClass, int level, String gender) {
         this(name, number); // Call the default constructor to initialize basic fields
         this.hand = new ArrayList<>(); // Initialize hand
+                
+        this.lives = Constant.MAX_INITIAL_PLAYERS_LIVES;
+        this.money = Constant.MAX_INITIAL_PLAYERS_MONEY;
+        this.attackForce = Constant.MAX_INITIAL_PLAYERS_ATTACK;
+        this.defense = Constant.MAX_INITIAL_PLAYERS_DEFENSE;
+        this.equipedObjects = new ArrayList<>();
 
         // Set specified values for race, class, level, and gender
         this.race = race;
         this.playerClass = playerClass;
         this.level = level;
+    
         this.gender = gender;
 
         this.hasEncounteredMonster = false;
+        this.isCursed = false;
+        this.isdead = false;
 
         // Distribute cards to the player during construction
         cardDeck.distributeDungeonTreasureCardToPlayer(this, numberOfInitialCardsForEachDeck);
+    }
+
+    public void setCurse(boolean b){this.isCursed = b;}
+    public boolean getCurse(){return this.isCursed;}
+
+    public void setDefense(Card c){
+        if(board.yesOrNoDialog("Remplacer l'objet de défense ?").equals("Oui")){
+            this.defense = c.getInfo().getLevelBonus(); 
+        }else{
+            System.out.println("objet non remplacé !");
+        }
+    }
+
+    public void takeGameObjectBonus(Card c) {
+        if (this.equipedObjects.isEmpty()) {
+            equipedObjects.add(c);
+            if (c.getInfo().getTreasureType() == TreasureType.TWO_HANDS) {
+                this.equipedObjectsSize = 2;
+            } else {
+                this.equipedObjectsSize = this.equipedObjects.size();
+            }
+            updateAttackForce(equipedObjects);
+        } else if (this.equipedObjects.size() < 2 && !(this.equipedObjects.get(0).getInfo().getTreasureType() == TreasureType.TWO_HANDS)) {
+            equipedObjects.add(c);
+            this.equipedObjectsSize = equipedObjects.size() + 1;
+            updateAttackForce(equipedObjects);
+        } else if (equipedObjects.size() == 0 && c.getInfo().getTreasureType() == TreasureType.TWO_HANDS) {
+            equipedObjects.add(c);
+            this.equipedObjectsSize = 2;
+        } else {
+            if (board.yesOrNoDialog("Vos deux mains sont occupées, Voulez vous remplacer l'objet").equals("Oui")) {
+                this.equipedObjects.clear();
+                this.equipedObjects.add(c);
+    
+                if (equipedObjects.size() == 0 && c.getInfo().getTreasureType() == TreasureType.TWO_HANDS) {
+                    this.equipedObjectsSize = 2;
+                } else {
+                    this.equipedObjectsSize = this.equipedObjects.size();
+                }
+    
+            } else {
+                System.out.println("objet non remplacé !");
+            }
+        }
+    }
+    
+
+    public void updateAttackForce(List<Card> equipedObjects){
+        setAttackForce(MAX_INITIAL_PLAYERS_ATTACK);
+        for(Card c: equipedObjects){
+            addAttackForce(c.getInfo().getLevelBonus());
+        }
     }
 
     public String getName() {
@@ -81,6 +162,27 @@ public class Player extends ListOfPlayer {
 
     public void addScore(int score) {
         this.score += score;
+    }
+    public void addLives(int lives){
+        this.lives += lives;
+        if(this.lives <= 0){this.lives = 0; this.isdead = true;}
+    }
+
+    public void addMoney(double money){
+        this.money += money;
+        if(this.money <= 0){this.money = 0;}
+    }
+
+    public void setAttackForce(int attck){
+        this.attackForce = attck;
+    }
+
+    public void addAttackForce(int attck){
+        this.attackForce += attck;
+    }
+
+    public int getAttackForce(){
+        return this.attackForce;
     }
 
     public void addTurn() {
@@ -128,11 +230,21 @@ public class Player extends ListOfPlayer {
     public void addToHand(Card card) {
         this.hand.add(card);
     }
-
-    public void removeFromHand(Card cards) {
-        this.hand.remove(cards);
+    public Card getFromHand(int i){
+        return this.hand.remove(i);
     }
 
+    public void removeFromHand(Card card) {
+        Iterator<Card> iterator = this.hand.iterator();
+        while (iterator.hasNext()) {
+            Card currentCard = iterator.next();
+            if (currentCard.equals(card)) {
+                iterator.remove();
+                break;  // Assuming each card is unique in the hand
+            }
+        }
+    }
+    
     public void addToHand(List<Card> cards) {
         this.hand.addAll(cards);
     }
@@ -151,6 +263,14 @@ public class Player extends ListOfPlayer {
 
     public String getPlayerClass() {
         return this.playerClass;
+    }
+
+    public int getLives(){
+        return this.lives;
+    }
+
+    public double getMoney(){
+        return this.money;
     }
 
     public int getLevel() {
