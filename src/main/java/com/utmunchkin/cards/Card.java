@@ -23,6 +23,13 @@ public class Card extends CardData {
         this.cardInfo = CardData.getRandomCardInfo();
     }
 
+    public boolean isMonster() {
+        return this instanceof Monster;
+    }
+
+    public boolean isCurse() {
+        return this instanceof Curse;
+    }
     public void applyCardEffect(Player player) {
         // Implement specific behavior for each card type
         // Use cardInfo to access attributes like levelBonus, isCursed, etc.

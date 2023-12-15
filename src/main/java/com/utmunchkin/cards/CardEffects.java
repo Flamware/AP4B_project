@@ -14,13 +14,13 @@ import main.java.com.utmunchkin.cards.CardData.TreasureType;
 
 public class CardEffects {
     private static final Random random = new Random();
-    private static ListOfPlayer listOfPlayer;
+    //private ListOfPlayer listOfPlayer;
 
-    private CardEffects() {
+    public CardEffects() {
         // Private constructor to prevent instantiation, as this class contains only static methods
     }
 
-    public static void applyEffect(Card card, Player player, String effectFunction) {
+    public void applyEffect(Card card, Player player, String effectFunction, ListOfPlayer allPlayers) {
         int typeNb;
         TreasureType type;
         type = card.getInfo().getTreasureType();
@@ -58,34 +58,19 @@ public class CardEffects {
                         break;
                 }
                 break;
-            
+
             case DUNGEON:
-                // Exemple d'effet pour les cartes de type DUNGEON
-                player.addLives(-2); // Réduit la vie du joueur de 2
-                break;
-
-            case CURSE:
-                // Exemple d'effet pour les cartes de type CURSE
-                int response = JOptionPane.showConfirmDialog(null, "Vous êtes maudit ! Voulez-vous perdre une vie pour lever la malédiction?", "Malédiction", JOptionPane.YES_NO_OPTION);
-                if (response == JOptionPane.YES_OPTION) {
-                    player.addLives(-1); // Le joueur perd une vie pour lever la malédiction
-                }else{
-                    player.setCurse(true);
-                }
-                break;
-
-            case MONSTER:
-                type = card.getInfo().getTreasureType();
-                
-                if(type == TreasureType.ENEMY || type == TreasureType.DEADLY || type == TreasureType.UNDEAD || type == TreasureType.MYSTERIOUS 
-                || type == TreasureType.FEROCIOUS || type == TreasureType.DREADFUL){
+                if(type == TreasureType.ENEMY || type == TreasureType.DEADLY || type == TreasureType.UNDEAD || type == TreasureType.MYSTERIOUS
+                        || type == TreasureType.FEROCIOUS || type == TreasureType.DREADFUL){
                     typeNb = 11; //Monstres communs
                 }else if(type == TreasureType.TREACHEROUS || type == TreasureType.VENOMOUS){
                     typeNb = 12; //Monstres traîtres
                 }else if(type == TreasureType.BOSS || type == TreasureType.ANCIENT || type == TreasureType.MYTHICAL || type == TreasureType.EVIL){
                     typeNb = 13; //Boss
-                }else if(type == TreasureType.CURSED || type == TreasureType.DARK || type == TreasureType.HAUNTED){
+                }else if(type == TreasureType.CURSED || type == TreasureType.DARK || type == TreasureType.HAUNTED) {
                     typeNb = 14; //Monstres maudits
+                }else if(type == TreasureType.CURSE){
+                    typeNb = 15;
                 }else{
                     typeNb = 10;
                     System.out.println("Type inconnu !");
@@ -113,8 +98,8 @@ public class CardEffects {
                         break;
                     case 14:
                         // Exemple d'effet pour les monstres maudits
-                        int randomPlayerIndex = random.nextInt(listOfPlayer.getSize()); // Sélectionne un joueur au hasard
-                        Player randomPlayer = listOfPlayer.getPlayer(randomPlayerIndex);
+                        int randomPlayerIndex = random.nextInt(allPlayers.getSize()); // Sélectionne un joueur au hasard
+                        Player randomPlayer = allPlayers.getPlayer(randomPlayerIndex);
                         int lostLivesOrMoney = random.nextInt(2); // Choix aléatoire entre perdre des vies (0) ou de l'argent (1)
                         
                         if (lostLivesOrMoney == 0) {
@@ -125,6 +110,14 @@ public class CardEffects {
                             randomPlayer.addMoney(-moneyLost);
                         }
                         break;
+                    case 15:
+                        // Exemple d'effet pour les cartes de type CURSE
+                        int response = JOptionPane.showConfirmDialog(null, "Vous êtes maudit ! Voulez-vous perdre une vie pour lever la malédiction?", "Malédiction", JOptionPane.YES_NO_OPTION);
+                        if (response == JOptionPane.YES_OPTION) {
+                            player.addLives(-1); // Le joueur perd une vie pour lever la malédiction
+                        }else{
+                            player.setCurse(true);
+                        }
                     default:
                         break;
                 }
