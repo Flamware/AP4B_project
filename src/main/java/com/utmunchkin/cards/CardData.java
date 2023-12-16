@@ -10,7 +10,7 @@ import java.util.function.Consumer;
 
 import main.java.com.utmunchkin.cards.CardData.CardInfo;
 import main.java.com.utmunchkin.cards.CardData.CardType;
-import main.java.com.utmunchkin.cards.CardData.TreasureType;
+import main.java.com.utmunchkin.cards.CardData.SubType;
 
 public class CardData {
 
@@ -18,11 +18,25 @@ public class CardData {
         /*RACE, CLASS, OBJECT, */TREASURE, DUNGEON
     }
 
-    public enum TreasureType {
+    public enum SubType {
         ARMOR, WEAPON, POTION, HEADGEAR, FOOTGEAR, ONE_HAND, TWO_HANDS, SPECIAL, USABLE, CARRIABLE,
         BIG, SMALL, VALUABLE, JEWELRY, CONSUMABLE, ENCHANTED, LIMITED_USE, MAGICAL, RARE, COMMON,
         TRAP, PUZZLE, HAUNT, ENEMY, BOSS, DEADLY, UNDEAD, MYSTERIOUS, CURSED, TREACHEROUS, FEROCIOUS,
         DREADFUL, ANCIENT, VENOMOUS, EVIL, HAUNTED, DARK, MYTHICAL, MONSTER, CURSE
+    }
+
+    public enum MonstersType {
+        ENEMY, BOSS, DEADLY, UNDEAD, MYSTERIOUS, CURSED, TREACHEROUS, FEROCIOUS,
+        DREADFUL, ANCIENT, VENOMOUS, EVIL, HAUNTED, DARK, MYTHICAL, MONSTER
+    }
+
+    public enum TreasuresTypes {
+        ARMOR, WEAPON, POTION, HEADGEAR, FOOTGEAR, ONE_HAND, TWO_HANDS, SPECIAL, USABLE, CARRIABLE,
+        BIG, SMALL, VALUABLE, JEWELRY, CONSUMABLE, ENCHANTED, LIMITED_USE, MAGICAL, RARE, COMMON
+    }
+
+    public enum DungeonsTypes {
+        TRAP, PUZZLE, HAUNT
     }
 
     // Map to store card data
@@ -43,10 +57,10 @@ public class CardData {
                 int levelBonus = Integer.parseInt(data[2].trim());
                 boolean isCursed = Boolean.parseBoolean(data[3].trim());
                 CardType cardType = CardType.valueOf(data[4].trim());
-                TreasureType treasureType = TreasureType.valueOf(data[5].trim());
+                SubType subType = SubType.valueOf(data[5].trim());
                 String effectFunctionName = data[6].trim();
 
-                CardInfo cardInfo = new CardInfo(cardName, description, levelBonus, isCursed, cardType, treasureType, effectFunctionName);
+                CardInfo cardInfo = new CardInfo(cardName, description, levelBonus, isCursed, cardType, subType, effectFunctionName);
                 cardInfoMap.put(cardName, cardInfo);
             } catch (IllegalArgumentException e) {
                 System.out.println("Invalid data format: " + line);
@@ -97,16 +111,16 @@ public class CardData {
         private final int levelBonus;
         private final boolean isCursed;
         private final CardType cardType;
-        private final TreasureType treasureType;
+        private final SubType subType;
         private final String effectFunctionName;
 
-        public CardInfo(String cardName, String description, int levelBonus, boolean isCursed, CardType cardType, TreasureType treasureType, String effectFunctionName) {
+        public CardInfo(String cardName, String description, int levelBonus, boolean isCursed, CardType cardType, SubType subType, String effectFunctionName) {
             this.cardName = cardName;
             this.description = description;
             this.levelBonus = levelBonus;
             this.isCursed = isCursed;
             this.cardType = cardType;
-            this.treasureType = treasureType;
+            this.subType = subType;
             this.effectFunctionName = effectFunctionName;
         }
 
@@ -130,8 +144,8 @@ public class CardData {
             return cardType;
         }
 
-        public TreasureType getTreasureType() {
-            return treasureType;
+        public SubType getSubType() {
+            return subType;
         }
 
         public String getEffectFunctionName() {
@@ -144,7 +158,7 @@ public class CardData {
                     ", levelBonus=" + levelBonus +
                     ", isCursed=" + isCursed +
                     ", cardType=" + cardType +
-                    ", treasureType=" + treasureType +
+                    ", subType=" + subType +
                     ", effectFunctionName='" + effectFunctionName + '\'' +
                     '}';
         }

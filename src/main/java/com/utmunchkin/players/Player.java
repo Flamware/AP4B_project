@@ -8,7 +8,8 @@ import main.java.com.utmunchkin.Constant;
 import main.java.com.utmunchkin.Interface.Board;
 import main.java.com.utmunchkin.cards.Card;
 import main.java.com.utmunchkin.cards.Cards;
-import main.java.com.utmunchkin.cards.CardData.TreasureType;
+import main.java.com.utmunchkin.cards.CardData.SubType;
+import main.java.com.utmunchkin.Interface.Interact;
 
 public class Player extends ListOfPlayer {
     // Données du joueur
@@ -27,10 +28,15 @@ public class Player extends ListOfPlayer {
     private int level;
     private String gender;
     private boolean hasEncounteredMonster;
-    private Board board;
     private int equippedObjectsSize;
     private boolean isCursed;
     private boolean isDead;
+
+    private boolean drawDungeon; // Flag to indicate whether the player wants to draw a dungeon card
+
+    private boolean drawTreasure; // Flag to indicate whether the player wants to draw a treasure card
+
+    private boolean boardActionAuthorized;
 
     // Constructeurs
 
@@ -57,6 +63,7 @@ public class Player extends ListOfPlayer {
         this.hasEncounteredMonster = false;
         this.isCursed = false;
         this.isDead = false;
+        this.boardActionAuthorized = false;
     }
 
     // Constructeur avec distribution de cartes
@@ -90,9 +97,18 @@ public class Player extends ListOfPlayer {
         this.hasEncounteredMonster = false;
         this.isCursed = false;
         this.isDead = false;
+        this.boardActionAuthorized = false;
 
         // Distribution des cartes au joueur lors de la construction
         cardDeck.distributeDungeonTreasureCardToPlayer(this, numberOfInitialCardsForEachDeck);
+    }
+
+    public void setBoardActionAuthorized(boolean boardActionAuthorized) {
+        this.boardActionAuthorized = boardActionAuthorized;
+    }
+
+    public boolean isBoardActionAuthorized(){
+        return this.boardActionAuthorized;
     }
 
     // Méthodes pour manipuler les malédictions
@@ -105,17 +121,42 @@ public class Player extends ListOfPlayer {
     }
 
     // Méthode pour définir la défense du joueur
-    public void setDefense(Card card) {
-        if (board.yesOrNoDialog("Remplacer l'objet de défense ?").equals("Oui")) {
+    public void setDefense(Card card, Board board) {
+        if (Interact.yesOrNoDialog("Replace defense object ?").equals("Yes")) {
             this.defense = card.getInfo().getLevelBonus();
         } else {
-            System.out.println("objet non remplacé !");
+            System.out.println("no replacement !");
         }
     }
 
+    public int getDefense() {
+        return defense;
+    }
+
+    public int getEquippedObjectsSize() {
+        return equippedObjectsSize;
+    }
+
+    public List<Card> getEquippedObjects() {
+        return equippedObjects;
+    }
+
+    public List<String> getEquippedObjectsNames() {
+        List<String> equippedObjectsNames = new ArrayList<>();
+        for (Card card : equippedObjects) {
+            equippedObjectsNames.add(card.getCardName());
+        }
+        return equippedObjectsNames;
+    }
+
+
     // Méthode pour gérer les objets équipés par le joueur
     public void takeGameObjectBonus(Card card) {
-        // Logique pour gérer les objets équipés
+        addAttackForce(card.getInfo().getLevelBonus());
+        this.equippedObjects.add(card);
+        updateAttackForce(this.equippedObjects);
+        System.out.println("EQUIP: " + this.equippedObjects);
+        System.out.println("ATTK: " + this.attackForce);
     }
 
     // Méthode pour mettre à jour la force d'attaque du joueur
@@ -173,6 +214,7 @@ public class Player extends ListOfPlayer {
      */
     public void addScore(int score) {
         this.score += score;
+        ;
     }
 
     /**
@@ -503,4 +545,22 @@ public class Player extends ListOfPlayer {
         this.hasEncounteredMonster = hasEncounteredMonster;
     }
 
+
+    // Getter method for drawDungeon flag
+    public boolean isDrawDungeon() {
+        return drawDungeon;
+    }
+
+    // Setter method for drawDungeon flag
+    public void setDrawDungeon(boolean b) {
+        drawDungeon = b;
+    }
+
+    public void setDrawTreasure(boolean b) {
+        drawTreasure = b;
+    }
+
+    public boolean isDrawTreasure() {
+        return drawTreasure;
+    }
 }

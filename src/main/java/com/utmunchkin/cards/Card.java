@@ -7,6 +7,8 @@ import java.io.File;
 import java.lang.reflect.Method;
 import java.util.Random;
 
+import static main.java.com.utmunchkin.cards.Card.Monster.getMonsterCombatStrengthMonster;
+
 public class Card extends CardData {
 
     protected final CardData.CardInfo cardInfo;
@@ -58,8 +60,9 @@ public class Card extends CardData {
     public String toString() {
         return cardInfo.getCardInfo();
     }
-    public int getMonsterCombatStrength() {
-        return Monster.getMonsterCombatStrengthMonster();
+    public int getMonsterCombatStrength(Card card) {
+        new Monster(card);
+        return getMonsterCombatStrengthMonster();
     }
     public int getLevels() {
         return Monster.getLevelsMonster();
@@ -74,12 +77,12 @@ public class Card extends CardData {
         private static int treasures;
     
     
-        public Monster() {
+        public Monster(Card card) {
             super();
             // Set other attributes if needed
-            this.setLevel(this.cardInfo.getLevelBonus());
-            this.setMonsterCombatStrength(this.cardInfo.getLevelBonus());
-            this.setTreasure(this.getMonsterCombatStrength() % 2);
+            this.setLevel(card.cardInfo.getLevelBonus());
+            this.setMonsterCombatStrength(card.cardInfo.getLevelBonus());
+            this.setTreasure(getMonsterCombatStrengthMonster() / 2);
         }
     
         public Monster(int combatStrength, int levels, int treasures) {

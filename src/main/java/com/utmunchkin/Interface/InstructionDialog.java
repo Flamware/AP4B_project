@@ -1,8 +1,11 @@
 package main.java.com.utmunchkin.Interface;
 
+import main.java.com.utmunchkin.cards.Card;
+
 import javax.swing.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.List;
 
 public class InstructionDialog extends JDialog {
 
@@ -73,4 +76,5 @@ public class InstructionDialog extends JDialog {
             return -1; // Not a valid integer
         }
     }
+
 }

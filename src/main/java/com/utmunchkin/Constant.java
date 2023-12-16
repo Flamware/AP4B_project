@@ -9,10 +9,12 @@ public class Constant {
     public  static  final  int NUMBER_OF_CARDS =  168 ; 
     public static final int MAX_INITIAL_PLAYERS_LIVES = 3;
     public static final int MAX_INITIAL_PLAYERS_MONEY = 10;
-    public static final int MAX_INITIAL_PLAYERS_ATTACK = 0;
+    public static final int MAX_INITIAL_PLAYERS_ATTACK = 3;
     public static final double OBJECTS_COST_COEFF = 1.5;
     public static final int MAX_INITIAL_PLAYERS_DEFENSE = 0;
     public static final int DEFAULT_CURSE_COST = 0;
+
+    public static final int NUMBER_OF_CARDS_FOR_EACH_TYPE = 4;
 
     public Constant(){}
     
