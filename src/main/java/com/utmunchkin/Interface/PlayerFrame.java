@@ -12,6 +12,7 @@ import javax.swing.text.BadLocationException;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -65,21 +66,42 @@ public class PlayerFrame extends JPanel {
             cardInfoArea.setEditable(false);
             cardInfoArea.append("Name: " + card.getCardName() + "\n");
             cardInfoArea.append("Type: " + card.getInfo().getCardType() + "\n");
+            cardInfoArea.append("Subtype: " + card.getInfo().getSubType() + "\n");
+            cardInfoArea.append("Value: " + card.getInfo().getLevelBonus() + "\n");
+            cardInfoArea.append("Desc.: " + card.getInfo().getDescription() + "\n");
             // Ajoutez d'autres attributs de carte au besoin
+
+            // Utilisez le nom de la carte pour construire le chemin de l'image
+            String imagePath = "src/main/java/com/utmunchkin/gameplay/img/game/" + card.getCardName() + ".png";
 
             // Créez un JLabel pour afficher l'image
             JLabel cardImageLabel = new JLabel();
             cardImageLabel.setHorizontalAlignment(JLabel.CENTER); // Centre l'image
 
-            // Chargez l'image depuis le chemin du fichier (assurez-vous d'avoir le chemin correct)
-            ImageIcon imageIcon = new ImageIcon("src/main/java/com/utmunchkin/gameplay/img/utmunchkin.png");
+            // Vérifiez si le fichier image existe
+            File imageFile = new File(imagePath);
+            if (imageFile.exists()) {
+                // Chargez l'image depuis le chemin du fichier
+                ImageIcon imageIcon = new ImageIcon(imagePath);
 
-            // Redimensionnez l'image
-            Image image = imageIcon.getImage().getScaledInstance(50, 50, Image.SCALE_SMOOTH);
-            ImageIcon resizedImageIcon = new ImageIcon(image);
+                // Redimensionnez l'image
+                Image image = imageIcon.getImage().getScaledInstance(50, 50, Image.SCALE_SMOOTH);
+                ImageIcon resizedImageIcon = new ImageIcon(image);
 
-            // Appliquez l'image redimensionnée au JLabel
-            cardImageLabel.setIcon(resizedImageIcon);
+                // Appliquez l'image redimensionnée au JLabel
+                cardImageLabel.setIcon(resizedImageIcon);
+            } else {
+                // Chargez l'image par défaut si le fichier n'existe pas
+                ImageIcon defaultImageIcon = new ImageIcon("src/main/java/com/utmunchkin/gameplay/img/default.png");
+
+                // Redimensionnez l'image par défaut
+                Image defaultImage = defaultImageIcon.getImage().getScaledInstance(50, 50, Image.SCALE_SMOOTH);
+                ImageIcon resizedDefaultImageIcon = new ImageIcon(defaultImage);
+
+                // Appliquez l'image redimensionnée par défaut au JLabel
+                cardImageLabel.setIcon(resizedDefaultImageIcon);
+            }
+
 
             // Créez le JButton et ajoutez le JTextArea et le JLabel
             JButton cardButton = new JButton();
@@ -175,6 +197,7 @@ public class PlayerFrame extends JPanel {
 
         // Dans votre méthode où vous créez les boutons
         JPanel handPanel = new JPanel(new GridLayout(4, 5)); // 4 rows, 5 columns
+
         for (int indexOfCard = 0; indexOfCard < updatedHand.size(); indexOfCard++) {
             Card card = updatedHand.get(indexOfCard);
 
@@ -183,21 +206,40 @@ public class PlayerFrame extends JPanel {
             cardInfoArea.setEditable(false);
             cardInfoArea.append("Name: " + card.getCardName() + "\n");
             cardInfoArea.append("Type: " + card.getInfo().getCardType() + "\n");
-            // Ajoutez d'autres attributs de carte au besoin
+            cardInfoArea.append("Subtype: " + card.getInfo().getSubType() + "\n");
+            cardInfoArea.append("Value: " + card.getInfo().getLevelBonus() + "\n");
+            cardInfoArea.append("Desc.: " + card.getInfo().getDescription() + "\n");
+
+            // Utilisez le nom de la carte pour construire le chemin de l'image
+            String imagePath = "src/main/java/com/utmunchkin/gameplay/img/game/" + card.getCardName() + ".png";
 
             // Créez un JLabel pour afficher l'image
             JLabel cardImageLabel = new JLabel();
             cardImageLabel.setHorizontalAlignment(JLabel.CENTER); // Centre l'image
 
-            // Chargez l'image depuis le chemin du fichier (assurez-vous d'avoir le chemin correct)
-            ImageIcon imageIcon = new ImageIcon("src/main/java/com/utmunchkin/gameplay/img/utmunchkin.png");
+            // Vérifiez si le fichier image existe
+            File imageFile = new File(imagePath);
+            if (imageFile.exists()) {
+                // Chargez l'image depuis le chemin du fichier
+                ImageIcon imageIcon = new ImageIcon(imagePath);
 
-            // Redimensionnez l'image
-            Image image = imageIcon.getImage().getScaledInstance(50, 50, Image.SCALE_SMOOTH);
-            ImageIcon resizedImageIcon = new ImageIcon(image);
+                // Redimensionnez l'image
+                Image image = imageIcon.getImage().getScaledInstance(50, 50, Image.SCALE_SMOOTH);
+                ImageIcon resizedImageIcon = new ImageIcon(image);
 
-            // Appliquez l'image redimensionnée au JLabel
-            cardImageLabel.setIcon(resizedImageIcon);
+                // Appliquez l'image redimensionnée au JLabel
+                cardImageLabel.setIcon(resizedImageIcon);
+            } else {
+                // Chargez l'image par défaut si le fichier n'existe pas
+                ImageIcon defaultImageIcon = new ImageIcon("src/main/java/com/utmunchkin/gameplay/img/default.png");
+
+                // Redimensionnez l'image par défaut
+                Image defaultImage = defaultImageIcon.getImage().getScaledInstance(50, 50, Image.SCALE_SMOOTH);
+                ImageIcon resizedDefaultImageIcon = new ImageIcon(defaultImage);
+
+                // Appliquez l'image redimensionnée par défaut au JLabel
+                cardImageLabel.setIcon(resizedDefaultImageIcon);
+            }
 
             // Créez le JButton et ajoutez le JTextArea et le JLabel
             JButton cardButton = new JButton();
@@ -213,7 +255,6 @@ public class PlayerFrame extends JPanel {
             cardButton.addActionListener(new CardButtonListener(indexOfCard, card));
         }
 
-
         JScrollPane scrollPane = new JScrollPane(monsterStatsTextArea);
         scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
 
@@ -226,6 +267,7 @@ public class PlayerFrame extends JPanel {
         revalidate(); // Refresh the layout
         repaint();    // Redraw the panel
     }
+
 
     // Get the image associated with the card (not implemented, customize as needed)
     /**

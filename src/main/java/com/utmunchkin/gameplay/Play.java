@@ -288,7 +288,7 @@ public class Play implements CardsActions {
         checkHandAndDraw();
 
         // Update the player frames and stats panel
-        refreshFrames();
+        //refreshFrames();
     }
 
 

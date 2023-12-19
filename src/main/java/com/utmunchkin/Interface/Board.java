@@ -130,9 +130,9 @@ public class Board extends JFrame {
         addStatWithImage("Lives", String.valueOf(currentPlayer.getLives()), "src/main/java/com/utmunchkin/gameplay/img/stats/lives.png");
         addStatWithImage("Money", String.valueOf(currentPlayer.getMoney()), "src/main/java/com/utmunchkin/gameplay/img/stats/money.png");
         addStatWithImage("Curse", String.valueOf(currentPlayer.getCurse()), "src/main/java/com/utmunchkin/gameplay/img/stats/curse.png");
-        addStatWithImage("Defense", String.valueOf(currentPlayer.getDefense()) , "src/main/java/com/utmunchkin/gameplay/img/stats/curse.png");
-        addStatWithImage("Equip.", String.valueOf(currentPlayer.getEquippedObjectsNames()) , "src/main/java/com/utmunchkin/gameplay/img/stats/curse.png");
-        addStatWithImage("Attack", String.valueOf(currentPlayer.getAttackForce()) , "src/main/java/com/utmunchkin/gameplay/img/stats/curse.png");
+        addStatWithImage("Defense", String.valueOf(currentPlayer.getDefense()) , "src/main/java/com/utmunchkin/gameplay/img/stats/defense.png");
+        addStatWithImage("Equip.", String.valueOf(currentPlayer.getEquippedObjectsNames()) , "src/main/java/com/utmunchkin/gameplay/img/stats/equipement.png");
+        addStatWithImage("Attack", String.valueOf(currentPlayer.getAttackForce()) , "src/main/java/com/utmunchkin/gameplay/img/stats/attack.png");
 
         // Add any other statistics you want to display
 

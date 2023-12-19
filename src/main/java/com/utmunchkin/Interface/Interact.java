@@ -41,7 +41,7 @@ public class Interact {
             Card card = monstersInHand.get(i);
 
             // Load the default image
-            ImageIcon defaultIcon = new ImageIcon("src/main/java/com/utmunchkin/gameplay/img/monster/default.png");
+            ImageIcon defaultIcon = new ImageIcon("src/main/java/com/utmunchkin/gameplay/img/default.png");
             Image image = defaultIcon.getImage();
 
             // Resize the image to fit the button
