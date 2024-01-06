@@ -153,5 +153,113 @@ public class CardEffects {
         }
     }
 
+<<<<<<< Updated upstream
     // Add more effect methods as needed
+=======
+    public static void handleTrapCard(Card card, Player player) {
+        JFrame frame = new JFrame("Trap Card Window");
+        frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        frame.setExtendedState(JFrame.MAXIMIZED_BOTH);
+        //frame.setSize(400, 400);
+        frame.setLayout(new GridLayout(5, 5));
+
+        JButton[][] buttons = new JButton[5][5];
+
+        List<Integer> allPositions = new ArrayList<>();
+        for (int i = 0; i < 25; i++) {
+            allPositions.add(i);
+        }
+
+        Collections.shuffle(allPositions);
+
+        List<Integer> positiveEffectPositions = allPositions.subList(0, 3);
+
+        CountDownLatch latch = new CountDownLatch(1); // Nouveau latch pour chaque invocation
+
+        for (int i = 0; i < 5; i++) {
+            for (int j = 0; j < 5; j++) {
+                buttons[i][j] = new JButton();
+                buttons[i][j].setBackground(Color.WHITE);
+
+                if (positiveEffectPositions.contains(i * 5 + j)) {
+                    buttons[i][j].addActionListener(new ActionListener() {
+                        @Override
+                        public void actionPerformed(ActionEvent e) {
+                            JButton source = (JButton) e.getSource();
+                            handlePositiveAction(player);
+                            latch.countDown(); // Compter le latch dans un nouveau thread
+                            frame.dispose();
+                        }
+                    });
+                } else {
+                    buttons[i][j].addActionListener(new ActionListener() {
+                        @Override
+                        public void actionPerformed(ActionEvent e) {
+                            JButton source = (JButton) e.getSource();
+                            handleNegativeAction(player);
+                            latch.countDown(); // Compter le latch dans un nouveau thread
+                            frame.dispose();
+                        }
+                    });
+                }
+
+                frame.add(buttons[i][j]);
+            }
+        }
+
+        int[][] matrix = new int[5][5];
+
+        for (int i = 0; i < 5; i++) {
+            for (int j = 0; j < 5; j++) {
+                if (positiveEffectPositions.contains(i * 5 + j)) {
+                    matrix[i][j] = 1;
+                } else {
+                    matrix[i][j] = 0;
+                }
+            }
+        }
+
+        printMatrix(matrix);
+
+        frame.setAlwaysOnTop(true);
+        frame.setVisible(true);
+
+        try {
+            new Thread(() -> {
+                try {
+                    latch.await(); // Attendre le décompte du latch dans un nouveau thread
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }).start();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+
+    private static void printMatrix(int[][] matrix) {
+        System.out.println("Matrix:");
+        for (int i = 0; i < matrix.length; i++) {
+            for (int j = 0; j < matrix[i].length; j++) {
+                System.out.print(matrix[i][j] + " ");
+            }
+            System.out.println();
+        }
+    }
+
+    private static void handlePositiveAction(Player player) {
+        player.addLives(player.getLives()+10);
+        player.addMoney(player.getMoney()+10);
+        Interact.showMessageDialog("You escaped the trap successfully !");
+    }
+
+    private static void handleNegativeAction(Player player) {
+        player.addLives(-10);
+        player.addMoney(-20);
+        Interact.showMessageDialog(" Ouch !, you lose lives and money!");
+    }
+
+    // Add more effect methods as need
+>>>>>>> Stashed changes
 }

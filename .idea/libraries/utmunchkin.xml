@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="utmunchkin">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/utmunchkin.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

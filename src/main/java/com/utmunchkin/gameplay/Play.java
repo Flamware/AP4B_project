@@ -4,12 +4,17 @@ import java.awt.Color;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+<<<<<<< Updated upstream
+=======
+import java.util.Random;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
+
+>>>>>>> Stashed changes
 import javax.swing.*;
 
 import main.java.com.utmunchkin.Constant;
-import main.java.com.utmunchkin.Interface.Board;
-import main.java.com.utmunchkin.Interface.PlayerFrame;
-import main.java.com.utmunchkin.Interface.Shop;
+import main.java.com.utmunchkin.Interface.*;
 import main.java.com.utmunchkin.Rules;
 import main.java.com.utmunchkin.cards.*;
 import main.java.com.utmunchkin.cards.CardData.SubType;
@@ -17,8 +22,6 @@ import main.java.com.utmunchkin.cards.CardData.MonstersType;
 import main.java.com.utmunchkin.players.Ally;
 import main.java.com.utmunchkin.players.ListOfPlayer;
 import main.java.com.utmunchkin.players.Player;
-import main.java.com.utmunchkin.Interface.Interact;
-import main.java.com.utmunchkin.Interface.MapPanel;
 
 public class Play implements CardsActions {
 
@@ -41,7 +44,7 @@ public class Play implements CardsActions {
     // Constructor for initializing the game with a list of players and a specified first player index
     /**
      * Constructor for initializing the game with a list of players and the index of the first player.
-     * @param players           List of players participating in the game.
+     * @param playersList           List of players participating in the game.
      * @param firstPlayerIndex  Index of the first player.
      */
     public Play(ListOfPlayer playersList, int firstPlayerIndex) {
@@ -334,7 +337,7 @@ public class Play implements CardsActions {
             Interact.showMessageDialog("Play cards from your hand !");
 
             // Continue playing excess cards until the hand size is 8 or less
-            while (currentPlayer.getHand().size() > 8) {
+            while (currentPlayer.getHand().size() > 8 && !currentPlayer.isDead()) {
                 playExcessCard(currentPlayer);
             }
 
@@ -358,25 +361,29 @@ public class Play implements CardsActions {
     }
 
     public void goToTheShop(Player player) {
-        shop.setMadeChoice(false);
-        player.setShoppingAuthorized(true);
-        mapPanel.setAllCellsColors(Color.MAGENTA);
-        shop.loadCardsToShop();
-        shop.openShopDialog(player); // Assurez-vous de passer les paramètres nécessaires
-    
-        // Attendez que le joueur fasse un choix dans la boîte de dialogue
-        while (!shop.isPlayerMadeChoice()) {
-            // Attendre un court instant pour éviter de surcharger le processeur
-            try {
-                Thread.sleep(100);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+
+        //music.replace(Constant.MUSIC_SHOP, stopFlag, music.pausePosition());
+        if(!curPlayer.isDead()) {
+            shop.setMadeChoice(false);
+            player.setShoppingAuthorized(true);
+            mapPanel.setAllCellsColors(Color.MAGENTA);
+            shop.loadCardsToShop();
+            shop.openShopDialog(player); // Assurez-vous de passer les paramètres nécessaires
+
+            // Attendez que le joueur fasse un choix dans la boîte de dialogue
+            while (!shop.isPlayerMadeChoice()) {
+                // Attendre un court instant pour éviter de surcharger le processeur
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
             }
+
+            player.setShoppingAuthorized(false);
+            mapPanel.resetCellColors();
+            System.out.println("check 2");
         }
-    
-        player.setShoppingAuthorized(false);
-        mapPanel.resetCellColors();
-        System.out.println("check 2");
     }
     
 
@@ -597,6 +604,7 @@ public class Play implements CardsActions {
      * @param listPlayers List of all players in the game.
      */
     private void giveExcessCards(Player donor, ListOfPlayer listPlayers) {
+<<<<<<< Updated upstream
         if (donor.getHand().size() >= 5) {
             List<Card> excessCards = donor.getHand().subList(5, donor.getHand().size());
 
@@ -621,10 +629,82 @@ public class Play implements CardsActions {
             // Propose to the player to draw cards to reach 5 cards
             while (donor.getHand().size() < 5) {
                 drawDungeonCard();
+=======
+        if(!curPlayer.isDead()) {
+            if (donor.getHand().size() >= 5) {
+                // Prompt the player to select cards to give
+                List<Card> selectedCards = askPlayerForCardsToGive(donor);
+
+                // Check if the player selected some cards
+                if (!selectedCards.isEmpty()) {
+                    curPlayer.setBoardActionAuthorized(true);
+
+                    // Ask the player to whom they want to give the excess cards
+                    Player recipient = askPlayerForRecipient(listPlayers);
+
+                    // Ensure a player has been selected
+                    if (recipient != null) {
+                        // Transfer the selected cards
+                        recipient.addToHand(selectedCards);
+                        donor.removeFromHand(selectedCards);
+
+                        Interact.showMessageDialog(donor.getName() + " gave the selected cards to " + recipient.getName());
+                        refreshFrames(players);
+                    } else {
+                        Interact.showMessageDialog("The player did not select a recipient. No transfer was made.");
+                        refreshFrames(players);
+                    }
+                } else {
+                    Interact.showMessageDialog("No cards selected. No transfer was made.");
+                    refreshFrames(players);
+                }
+            } else {
+                System.out.println("Not enough cards to give");
+
+                // Propose to the player to draw cards to reach 5 cards
+                while (donor.getHand().size() < Constant.NUMBER_OF_CARDS_AFTER_GIVING_EXCESS) {
+                    drawDungeonCard();
+                }
+>>>>>>> Stashed changes
             }
         }
     }
 
+<<<<<<< Updated upstream
+=======
+    /**
+     * Asks the player to select cards to give during the charity phase.
+     * @param donor The player giving excess cards.
+     * @return The list of selected cards.
+     */
+    private List<Card> askPlayerForCardsToGive(Player donor) {
+        List<Card> selectedCards = new ArrayList<>();
+
+        Interact.showMessageDialog("Select cards to give from your hand (maximum 5):");
+
+        while (selectedCards.size() < 5) {
+            // Display the player's hand and allow them to select cards
+            int selectedCardIndex = Interact.showCardSelectionDialog(donor.getHand());
+
+            // Check if the player canceled the selection
+            if (selectedCardIndex == -1) {
+                donor.addToHand(selectedCards);
+                break;
+            }
+
+            // Add the selected card to the list
+            Card selectedCard = donor.getHand().get(selectedCardIndex);
+            selectedCards.add(selectedCard);
+
+            // Remove the selected card from the player's hand
+            donor.removeFromHand(selectedCard);
+        }
+
+        return selectedCards;
+    }
+
+
+>>>>>>> Stashed changes
     // Method representing the "Play Excess Card" action for the player
     /**
      * Plays excess cards from the player's hand during the charity phase.

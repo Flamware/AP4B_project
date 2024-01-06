@@ -3,8 +3,6 @@ package main.java.com.utmunchkin.cards;
 import java.util.ArrayList;
 import java.util.List;
 
-import main.java.com.utmunchkin.Constant;
-
 /**
  * The Treasure class represents the treasure deck in the game.
  */
@@ -85,11 +83,12 @@ public class Treasure extends Cards {
      * @return The removed card, or null if the index is invalid or the deck is empty.
      */
     public Card removeFromDeck(int i) {
-        if (!deckPile.isEmpty() && i >= 0 && i < deckPile.size()) {
-            return deckPile.remove(i);
-        } else {
-            return null; // or throw an exception, depending on your design choice
+        if (deckPile.isEmpty() || i < 0 || i >= deckPile.size()) {
+            deckPile.addAll(discardPile);
+            discardPile.clear();
+            shuffleCards(deckPile);
         }
+        return deckPile.remove(i);
     }
 
     /**
@@ -107,11 +106,12 @@ public class Treasure extends Cards {
      * @return The removed card, or null if the deck is empty.
      */
     public Card removeFirstFromDeck() {
-        if (!deckPile.isEmpty()) {
-            return deckPile.remove(0);
-        } else {
-            return null; // or throw an exception, depending on your design choice
+        if (deckPile.isEmpty()) {
+            deckPile.addAll(discardPile);
+            discardPile.clear();
+            shuffleCards(deckPile);
         }
+        return deckPile.removeFirst();
     }
 
     /**
@@ -120,10 +120,10 @@ public class Treasure extends Cards {
      * @return The drawn card, or null if the deck is empty.
      */
     public static Card draw() {
-        if (!deckPile.isEmpty()) {
-            return deckPile.remove(0);
-        } else {
-            return null; // or throw an exception, depending on your design choice
+        if (deckPile.isEmpty()) {
+            deckPile.addAll(discardPile);
+            discardPile.clear();
         }
+        return deckPile.removeFirst();
     }
 }

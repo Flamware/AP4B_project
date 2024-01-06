@@ -75,4 +75,9 @@ public class Constant {
 
     public static final boolean FEATURE_2 = false;
 
+    public static String MUSIC_EXPLORATION = "src/main/java/com/utmunchkin/Interface/music/Legends.wav";
+    public static String MUSIC_FIGHT = "src/main/java/com/utmunchkin/Interface/music/Pixel_Reloaded.wav";
+    public static String MUSIC_SHOP = "src/main/java/com/utmunchkin/Interface/music/Pulsion_Reloaded.wav";
+    public static String MUSIC_CHARITY = "src/main/java/com/utmunchkin/Interface/music/Pixel.wavs";
+
 }
