@@ -4,6 +4,7 @@ import java.awt.Color;
 import java.util.ArrayList;
 import java.util.List;
 
+import main.java.com.utmunchkin.Constant;
 import main.java.com.utmunchkin.Interface.Board;
 import main.java.com.utmunchkin.Interface.Interact;
 import main.java.com.utmunchkin.Interface.MapPanel;
@@ -76,12 +77,12 @@ public class Ally {
             listOfAllies.add(helpingPlayer);
             System.out.println(map + "Allies: " + listOfAllies + " Ally added: " + helpingPlayer.getName());
 
-            int moneyToPay = 0;
+            int moneyToPay = Constant.PRICE_FOR_REQUESTING_HELP;
 
             // Check if help has already been requested and charge 5 money per player from the second one
-            if (Ally.getHelpRequested()) {
+            /*if (Ally.getHelpRequested()) {
                 moneyToPay = 5;
-            }
+            }*/
 
             // Check if the player has enough money to request help
             if (requestingPlayer.getMoney() >= moneyToPay) {
@@ -104,7 +105,7 @@ public class Ally {
                 }
 
                 Board.updatePlayerStatsPanel(requestingPlayer);
-                String answer = Interact.yesOrNoDialog("Do you want to ask another player for help (for 5 money)?");
+                String answer = Interact.yesOrNoDialog("Do you want to ask another player for help (for " + moneyToPay + " money)?");
 
                 // Set the help requested flag
                 Ally.setHelpRequested(true);

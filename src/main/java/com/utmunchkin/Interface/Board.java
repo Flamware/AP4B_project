@@ -17,6 +17,9 @@ import javax.swing.border.TitledBorder;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
+import java.awt.font.TextAttribute;
 import java.awt.image.BufferedImage;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -26,6 +29,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.lang.reflect.Field;
+import java.text.AttributedString;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -34,36 +38,41 @@ import java.util.concurrent.CountDownLatch;
 
 public class Board extends JFrame {
 
-private List<PlayerFrame> playerFrames;
+    private List<PlayerFrame> playerFrames;
 
-    private ListOfPlayer listOfPlayer;
+    private static ListOfPlayer listOfPlayer;
+    private static JLabel mainInfoArea;
+    private static JPanel playerStatsPanel;
+
+
     private JButton drawDungeonButton;
     private JButton drawTreasureButton;
+    private JLabel discardDungeonLabel;
+    private JLabel discardTreasureLabel;
     private JTextArea infoTextArea;
-    private static JLabel mainInfoArea;
-
-    private CountDownLatch userInputLatch;
-
+    
     private JPanel deckPanel;
-
     private JPanel otherAttributesPanel;
     private JPanel mapPanel;
     private JPanel playersPanel;
     private JPanel playerHandsPanel;
-    private static JPanel playerStatsPanel;
 
+    private CountDownLatch userInputLatch;
+
+    private boolean playFlag = false;
+    private int choice;
+
+    
     // Create and add the MapPanel to the center of the mapPanel
     MapPanel gameMap;
-    private boolean playFlag = false;
+    Font font, titleFont, generalFont;
 
-    private int choice;
+    
+
 
     /**
      * Constructs a Board object with the specified parameters.
-     *
-     * @param a The Play object representing the game.
-     * @param d The Dungeon object.
-     * @param t The Treasure object.
+     * 
      */
     public Board() {
 
@@ -76,6 +85,25 @@ private List<PlayerFrame> playerFrames;
         setLayout(new BorderLayout());
         resetUserInputLatch();
 
+        titleFont = loadFontFromFile(Constant.FONT_PATH_3, Font.PLAIN, 40);
+        font = loadFontFromFile(Constant.FONT_PATH_3, Font.PLAIN, 25);
+        generalFont = loadFontFromFile(Constant.FONT_PATH_3, Font.PLAIN, 35);
+
+        // Ajouter un KeyListener pour la touche "Échap"
+        addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyPressed(KeyEvent e) {
+                if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
+                    int choice = JOptionPane.showConfirmDialog(Board.this,
+                            "Voulez-vous vraiment quitter le jeu ?", "Quitter le jeu",
+                            JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+                    if (choice == JOptionPane.YES_OPTION) {
+                        System.exit(0);
+                    }
+                }
+            }
+        });
+        
         waitForPlayButton();
 
         // Game and deck initialization
@@ -94,11 +122,11 @@ private List<PlayerFrame> playerFrames;
 
         // JLabel for main info
         mainInfoArea = new JLabel();
-        mainInfoArea.setFont(new Font("Arial", Font.BOLD, 24));
         mainInfoArea.setForeground(Color.RED);
         mainInfoArea.setBackground(Constant.INFO_TEXT_AREA_BACKGROUND_COLOR);
         mainInfoArea.setOpaque(true);
         mainInfoArea.setHorizontalAlignment(JLabel.CENTER);
+        setFont(mainInfoArea, titleFont);
 
         // JPanel for different sections
         deckPanel = new JPanel(new GridLayout(2, 2));
@@ -107,6 +135,7 @@ private List<PlayerFrame> playerFrames;
         playerStatsPanel = new JPanel(new GridLayout(1, 2));
         mapPanel = new JPanel();
         otherAttributesPanel = new JPanel();
+
 
         // Setting borders and backgrounds
         setBordersAndBackgrounds();
@@ -121,7 +150,7 @@ private List<PlayerFrame> playerFrames;
 
         initializePlayersPanel();
         initializeMapPanel();
-        initializeOtherAttributesPanel();
+        //initializeOtherAttributesPanel();
 
         // Set the size of the JFrame to the screen size and center it
         setSizeAndCenter();
@@ -129,78 +158,27 @@ private List<PlayerFrame> playerFrames;
         // Apply rounded corners and other effects to panels and buttons
         applyAestheticEffects();
 
+        // Enable fullscreen
+        setExtendedState(JFrame.MAXIMIZED_BOTH);
+        //setUndecorated(true);
+
         // Make the JFrame visible
         setVisible(true);
+
+        // Afficher un message d'avertissement au lancement
+        /*
+        JOptionPane.showMessageDialog(this,
+        "Vous pouvez quitter le jeu à tout moment en appuyant sur la touche Échap.",
+        "Avertissement", JOptionPane.INFORMATION_MESSAGE);
+        */
 
         // Update player stats
         updatePlayerStats(Play.getPlayers());
     }
-    
-
-    /**
-     * Applies aesthetic effects such as rounded corners, reliefs, and shadows.
-     */
-    private void applyAestheticEffects() {
-
-        // Apply reliefs and shadows to panels and buttons
-        applyReliefsAndShadows(deckPanel);
-        applyReliefsAndShadows(playersPanel);
-        applyReliefsAndShadows(playerHandsPanel);
-        applyReliefsAndShadows(playerStatsPanel);
-        applyReliefsAndShadows(mapPanel);
-        applyReliefsAndShadows(otherAttributesPanel);
-
-        // Apply reliefs and shadows to buttons
-        applyReliefsAndShadowsToButtons(drawDungeonButton, drawTreasureButton);
-    }
-
-    /**
-     * Applies reliefs and shadows to the specified panels and buttons.
-     *
-     * @param components The components to which effects will be applied.
-     */
-    private void applyReliefsAndShadows(Component... components) {
-        for (Component component : components) {
-            if (component instanceof JPanel) {
-                // Apply a bevel border with lowered type for panels
-                ((JPanel) component).setBorder(BorderFactory.createBevelBorder(BevelBorder.LOWERED));
-            } else if (component instanceof JButton) {
-                // Apply a raised bevel border for buttons
-                ((JButton) component).setBorder(BorderFactory.createRaisedBevelBorder());
-            }
-        }
-    }
-
-    /**
-     * Applies reliefs and shadows to the specified buttons.
-     *
-     * @param buttons The buttons to which effects will be applied.
-     */
-    private void applyReliefsAndShadowsToButtons(JButton... buttons) {
-        for (JButton button : buttons) {
-            // Apply a raised bevel border for buttons
-            button.setBorder(BorderFactory.createRaisedBevelBorder());
-
-            // Add a drop shadow effect using a custom border
-            button.setBorder(BorderFactory.createCompoundBorder(
-                    button.getBorder(),
-                    BorderFactory.createEmptyBorder(5, 5, 5, 5)
-            ));
-        }
-    }
 
 
-
-    private void waitForPlayButton() {
-        while (!playFlag) {
-            try {
-                // Sleep for a short duration to avoid freezing the UI
-                Thread.sleep(100);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-    }
+    //Main Menu-----------------------------------------------------------------
+    //--
 
     /**
      * Initializes the main menu directly in the Board class.
@@ -241,7 +219,7 @@ private List<PlayerFrame> playerFrames;
             }
         });
 
-        // Records button
+        // SaveData button
         JButton recordsButton = new JButton("Data");
         recordsButton.addActionListener(new ActionListener() {
             @Override
@@ -251,6 +229,14 @@ private List<PlayerFrame> playerFrames;
                 viewData();
             }
         });
+
+        setFont(playButton, generalFont);
+        setFont(optionsButton, generalFont);
+        setFont(recordsButton, generalFont);
+        playButton.setBackground(Constant.DRAW_BUTTON_BACKGROUND_COLOR2);
+        optionsButton.setBackground(Constant.DRAW_BUTTON_BACKGROUND_COLOR2);
+        recordsButton.setBackground(Constant.DRAW_BUTTON_BACKGROUND_COLOR2);
+
 
         // Add buttons to the panel
         panel.add(playButton);
@@ -266,6 +252,9 @@ private List<PlayerFrame> playerFrames;
         // Make the window visible
         frame.setVisible(true);
     }
+
+
+    //Settings and Components --------------------------------------------------
 
     /**
      * Displays the settings dialog and allows users to adjust game parameters.
@@ -300,7 +289,7 @@ private List<PlayerFrame> playerFrames;
         settingsDialog.add(buttonsPanel);
 
         // Set the size, make it visible, and wait for the user to close the dialog
-        settingsDialog.setSize(400, 400);  // Adjust the size as needed
+        settingsDialog.setSize(1000, 1000);  // Adjust the size as needed
         settingsDialog.setLocationRelativeTo(this);
         settingsDialog.setVisible(true);
     }
@@ -504,6 +493,9 @@ private List<PlayerFrame> playerFrames;
     }
 
 
+
+    //Data and Settings-------------------------------------------------------
+
     /**
      * Saves the current game settings to a text file.
      */
@@ -511,29 +503,38 @@ private List<PlayerFrame> playerFrames;
         try (OutputStream output = new FileOutputStream("settings.properties")) {
             Properties properties = new Properties();
     
-            // Get all fields in the Constant class
+            // Obtenez tous les champs dans la classe Constant
             Field[] fields = Constant.class.getDeclaredFields();
     
-            // Iterate over the fields
+            // Itérez sur les champs
             for (Field field : fields) {
-                if (field.getType() == Color.class || field.getType() == int.class) {
-                    String fieldName = field.getName();
-                    Object fieldValue = field.get(null);
-            
-                    if (field.getType() == Color.class) {
-                        properties.setProperty(fieldName + "_R", String.valueOf(((Color) fieldValue).getRed()));
-                        properties.setProperty(fieldName + "_G", String.valueOf(((Color) fieldValue).getGreen()));
-                        properties.setProperty(fieldName + "_B", String.valueOf(((Color) fieldValue).getBlue()));
-                    } else if (field.getType() == int.class) {
-                        properties.setProperty(fieldName, fieldValue.toString());
+                String fieldName = field.getName();
+                Object fieldValue = field.get(null);
+    
+                // Ajoutez la propriété uniquement si elle est de type Color ou int
+                if ((fieldValue instanceof Color) || (fieldValue instanceof Integer)) {
+                    // Construisez le nom de la propriété
+                    String propertyKey = fieldName;
+    
+                    if (fieldValue instanceof Color) {
+                        propertyKey += "_R";
+                        properties.setProperty(propertyKey, String.valueOf(((Color) fieldValue).getRed()));
+    
+                        propertyKey = fieldName + "_G";
+                        properties.setProperty(propertyKey, String.valueOf(((Color) fieldValue).getGreen()));
+    
+                        propertyKey = fieldName + "_B";
+                        properties.setProperty(propertyKey, String.valueOf(((Color) fieldValue).getBlue()));
+                    } else {
+                        properties.setProperty(propertyKey, fieldValue.toString());
                     }
                 }
             }
     
-            // Save the properties to the file
+            // Enregistrez les propriétés dans le fichier
             properties.store(output, null);
     
-            // Inform the user that settings have been saved
+            // Informez l'utilisateur que les paramètres ont été enregistrés avec succès
             JOptionPane.showMessageDialog(this, "Settings saved successfully.", "Success", JOptionPane.INFORMATION_MESSAGE);
         } catch (IOException | IllegalAccessException e) {
             e.printStackTrace();
@@ -542,6 +543,7 @@ private List<PlayerFrame> playerFrames;
     }
     
     private void loadSettingsFromFile() {
+
         try (InputStream input = new FileInputStream("settings.properties")) {
             Properties properties = new Properties();
     
@@ -558,10 +560,14 @@ private List<PlayerFrame> playerFrames;
                     String propertyValue;
             
                     if (field.getType() == Color.class) {
-                        int red = Integer.parseInt(properties.getProperty(fieldName + "_R"));
-                        int green = Integer.parseInt(properties.getProperty(fieldName + "_G"));
-                        int blue = Integer.parseInt(properties.getProperty(fieldName + "_B"));
-                        field.set(null, new Color(red, green, blue));
+                        if(properties.getProperty(fieldName + "_R") != null && 
+                            properties.getProperty(fieldName + "_G") != null && 
+                            properties.getProperty(fieldName + "_B") != null){
+                            int red = Integer.parseInt(properties.getProperty(fieldName + "_R"));
+                            int green = Integer.parseInt(properties.getProperty(fieldName + "_G"));
+                            int blue = Integer.parseInt(properties.getProperty(fieldName + "_B"));
+                            field.set(null, new Color(red, green, blue));
+                        }
                     } else if (field.getType() == int.class) {
                         propertyValue = properties.getProperty(fieldName);
                         if (propertyValue != null) {
@@ -572,7 +578,7 @@ private List<PlayerFrame> playerFrames;
             }
     
             // Inform the user that settings have been loaded
-            JOptionPane.showMessageDialog(this, "Settings loaded successfully.", "Success", JOptionPane.INFORMATION_MESSAGE);
+            //JOptionPane.showMessageDialog(this, "Settings loaded successfully.", "Success", JOptionPane.INFORMATION_MESSAGE);
         } catch (IOException | IllegalAccessException e) {
             e.printStackTrace();
             JOptionPane.showMessageDialog(this, "Error loading settings. Using default settings.", "Error", JOptionPane.ERROR_MESSAGE);
@@ -636,9 +642,90 @@ private List<PlayerFrame> playerFrames;
     
 
 
+    //Creation JComponents--------------------------------------------------
 
-    
-    // Helper methods
+    /*Top*/
+
+    /**
+     * Creates the top panel containing main info and player stats.
+     *
+     * @return The top JPanel.
+     */
+    private JPanel createTopPanel() {
+        JPanel topPanel = new JPanel();
+        topPanel.setLayout(new BorderLayout());
+        topPanel.add(mainInfoArea, BorderLayout.PAGE_START);
+        topPanel.add(playerStatsPanel, BorderLayout.PAGE_END);
+        return topPanel;
+    }
+
+    /*Middle*/
+
+    /**
+     * Creates the middle panel containing player hands.
+     *
+     * @return The middle JPanel.
+     */
+    private JPanel createMiddlePanel() {
+        JPanel middlePanel = new JPanel();
+        middlePanel.setLayout(new BorderLayout());
+        middlePanel.add(playerHandsPanel, BorderLayout.WEST);
+        return middlePanel;
+    }
+
+    /*Bottom*/
+
+    /**
+     * Creates the bottom panel containing game info, map, and other attributes.
+     *
+     * @param infoScrollPane JScrollPane for game info text area.
+     * @return The bottom JPanel.
+     */
+    private JPanel createBottomPanel(JScrollPane infoScrollPane) {
+        JPanel bottomPanel = new JPanel();
+        bottomPanel.setLayout(new BorderLayout());
+        bottomPanel.add(infoScrollPane, BorderLayout.WEST);
+        bottomPanel.add(mapPanel, BorderLayout.CENTER);
+        bottomPanel.add(otherAttributesPanel, BorderLayout.EAST);
+        return bottomPanel;
+    }
+
+    /*---------------------Panels-------------------*/
+
+    /**
+     * Organizes different panels in the main layout.
+     *
+     * @param infoScrollPane JScrollPane for game info text area.
+     */
+    private void organizePanels(JScrollPane infoScrollPane) {
+        // Create panels to organize the layout
+        JPanel topPanel = createTopPanel();
+        JPanel middlePanel = createMiddlePanel();
+        JPanel bottomPanel = createBottomPanel(infoScrollPane);
+
+        // Add panels to the main container
+        JButton settingsButton = new JButton("Settings");
+        settingsButton.setBackground(Constant.BUTTON_COLOR_1);
+        settingsButton.addActionListener(e -> settings());
+
+        JButton saveButton = new JButton("Save");
+        saveButton.setBackground(Constant.BUTTON_COLOR_1);
+        saveButton.addActionListener(e -> save());
+
+        topPanel.add(playersPanel, BorderLayout.CENTER);
+        topPanel.add(settingsButton, BorderLayout.EAST);
+        topPanel.add(saveButton, BorderLayout.WEST);
+        add(topPanel, BorderLayout.PAGE_START);
+
+        add(middlePanel, BorderLayout.CENTER);
+
+        add(deckPanel, BorderLayout.EAST);
+        add(bottomPanel, BorderLayout.PAGE_END);
+    }
+
+
+
+    //Setters---------------------------------------------------------------
 
     /**
      * Sets borders and backgrounds for various panels.
@@ -657,74 +744,6 @@ private List<PlayerFrame> playerFrames;
         otherAttributesPanel.setBackground(Constant.DECK_PANEL_BACKGROUND_COLOR);
     }
 
-    /**
-     * Organizes different panels in the main layout.
-     *
-     * @param infoScrollPane JScrollPane for game info text area.
-     */
-    private void organizePanels(JScrollPane infoScrollPane) {
-        // Create panels to organize the layout
-        JPanel topPanel = createTopPanel();
-        JPanel middlePanel = createMiddlePanel();
-        JPanel bottomPanel = createBottomPanel(infoScrollPane);
-
-        // Add panels to the main container
-        JButton settingsButton = new JButton("Settings");
-        settingsButton.addActionListener(e -> settings());
-
-        JButton saveButton = new JButton("Save");
-        saveButton.addActionListener(e -> save());
-
-        topPanel.add(playersPanel, BorderLayout.CENTER);
-        topPanel.add(settingsButton, BorderLayout.EAST);
-        topPanel.add(saveButton, BorderLayout.WEST);
-        add(topPanel, BorderLayout.PAGE_START);
-
-        add(middlePanel, BorderLayout.CENTER);
-
-        add(deckPanel, BorderLayout.EAST);
-        add(bottomPanel, BorderLayout.PAGE_END);
-    }
-
-    /**
-     * Creates the top panel containing main info and player stats.
-     *
-     * @return The top JPanel.
-     */
-    private JPanel createTopPanel() {
-        JPanel topPanel = new JPanel();
-        topPanel.setLayout(new BorderLayout());
-        topPanel.add(mainInfoArea, BorderLayout.PAGE_START);
-        topPanel.add(playerStatsPanel, BorderLayout.PAGE_END);
-        return topPanel;
-    }
-
-    /**
-     * Creates the middle panel containing player hands.
-     *
-     * @return The middle JPanel.
-     */
-    private JPanel createMiddlePanel() {
-        JPanel middlePanel = new JPanel();
-        middlePanel.setLayout(new BorderLayout());
-        middlePanel.add(playerHandsPanel, BorderLayout.WEST);
-        return middlePanel;
-    }
-
-    /**
-     * Creates the bottom panel containing game info, map, and other attributes.
-     *
-     * @param infoScrollPane JScrollPane for game info text area.
-     * @return The bottom JPanel.
-     */
-    private JPanel createBottomPanel(JScrollPane infoScrollPane) {
-        JPanel bottomPanel = new JPanel();
-        bottomPanel.setLayout(new BorderLayout());
-        bottomPanel.add(infoScrollPane, BorderLayout.WEST);
-        bottomPanel.add(mapPanel, BorderLayout.CENTER);
-        bottomPanel.add(otherAttributesPanel, BorderLayout.EAST);
-        return bottomPanel;
-    }
 
     /**
      * Sets the size of the JFrame to the screen size and centers it.
@@ -746,13 +765,77 @@ private List<PlayerFrame> playerFrames;
     public static void setMainInfoText(String text) {
         mainInfoArea.setText(text);
     }
+    
 
+    
+    //Image - Icon-------------------------------------------------------
+
+    /**
+     * Creates a resized icon from the given image path.
+     *
+     * @param imagePath The path to the image.
+     * @param width     The width of the resized icon.
+     * @param height    The height of the resized icon.
+     * @return The resized icon.
+     */
+    private Image createResizedIcon(String imagePath, int width, int height) {
+        ImageIcon originalIcon = new ImageIcon(imagePath);
+        Image originalImage = originalIcon.getImage();
+
+        // Ensure that width and height are positive
+        width = Math.max(1, width);
+        height = Math.max(1, height);
+
+        // Create a BufferedImage to allow smoother scaling
+        BufferedImage bufferedImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g2d = bufferedImage.createGraphics();
+        g2d.drawImage(originalImage, 0, 0, width, height, null);
+        g2d.dispose();
+
+        return bufferedImage.getScaledInstance(width, height, Image.SCALE_SMOOTH);
+    }
+
+    /**
+     * Adds a JLabel with an image to the player statistics panel.
+     *
+     * @param statName The name of the statistic.
+     * @param statValue The value of the statistic.
+     * @param imagePath The path to the image.
+     */
+    private static void addStatWithImage(String statName, String statValue, String imagePath) {
+        // Create a JPanel to hold both the stat label and image
+        JPanel statPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+
+        // Create a JLabel for the stat
+        JLabel statLabel = createStatLabel(statName + ": " + statValue);
+
+        // Create an ImageIcon for the image
+        ImageIcon imageIcon = new ImageIcon(imagePath);
+        Image image = imageIcon.getImage().getScaledInstance(20, 20, Image.SCALE_SMOOTH);
+        imageIcon = new ImageIcon(image);
+
+        // Create a JLabel for the image
+        JLabel imageLabel = new JLabel(imageIcon);
+
+        // Add the stat label and image label to the stat panel
+        statPanel.add(statLabel);
+        statPanel.add(imageLabel);
+
+        statPanel.setBackground(Constant.PLAYER_STATS_BACKGROUND_COLOR);
+
+        // Add the stat panel to the playerStatsPanel
+        playerStatsPanel.add(statPanel);
+    }
+    
+
+    //Initialization Methods---------------------------------------------
 
     // Function to initialize the player statistics panel
     private static void initializeStatsPanel() {
 
         // Add headers for player statistics
         JLabel nameLabel = createStatLabel("Name");
+        JLabel scoreLabel = createStatLabel("Score");
         JLabel levelLabel = createStatLabel("Level");
         JLabel livesLabel = createStatLabel("Lives");
         JLabel moneyLabel = createStatLabel("Money");
@@ -762,6 +845,7 @@ private List<PlayerFrame> playerFrames;
         JLabel attackLabel = createStatLabel("Attack");
 
         playerStatsPanel.add(nameLabel);
+        playerStatsPanel.add(scoreLabel);
         playerStatsPanel.add(levelLabel);
         playerStatsPanel.add(livesLabel);
         playerStatsPanel.add(moneyLabel);
@@ -798,70 +882,6 @@ private List<PlayerFrame> playerFrames;
         return label;
     }
 
-    /**
-     * Updates the player statistics panel based on the current player.
-     *
-     * @param currentPlayer The current player.
-     */
-    public static void updatePlayerStatsPanel(Player currentPlayer) {
-        
-        // Clear the player statistics panel before updating
-        playerStatsPanel.removeAll();
-
-        // Add the player's information to the panel
-        addStatWithImage("Name", currentPlayer.getName(), "src/main/java/com/utmunchkin/gameplay/img/stats/name.png");
-        addStatWithImage("Level", String.valueOf(currentPlayer.getLevel()), "src/main/java/com/utmunchkin/gameplay/img/stats/level.png");
-        addStatWithImage("Lives", String.valueOf(currentPlayer.getLives()), "src/main/java/com/utmunchkin/gameplay/img/stats/lives.png");
-        addStatWithImage("Money", String.valueOf(currentPlayer.getMoney()), "src/main/java/com/utmunchkin/gameplay/img/stats/money.png");
-        addStatWithImage("Curse", String.valueOf(currentPlayer.getCurse()), "src/main/java/com/utmunchkin/gameplay/img/stats/curse.png");
-        addStatWithImage("Defense", String.valueOf(currentPlayer.getDefense()), "src/main/java/com/utmunchkin/gameplay/img/stats/defense.png");
-        addStatWithImage("Equip.", String.valueOf(currentPlayer.getEquippedObjectsNames()), "src/main/java/com/utmunchkin/gameplay/img/stats/equipement.png");
-        addStatWithImage("Attack", String.valueOf(currentPlayer.getAttackForce()), "src/main/java/com/utmunchkin/gameplay/img/stats/attack.png");
-
-        // Add any other statistics you want to display
-
-        // Set the background color of all JLabel components in playerStatsPanel to black
-        Arrays.stream(playerStatsPanel.getComponents())
-                .filter(component -> component instanceof JLabel)
-                .map(component -> (JLabel) component)
-                .forEach(label -> label.setBackground(Color.BLACK));
-
-        // Repaint the panel to reflect the changes
-        playerStatsPanel.revalidate();
-        playerStatsPanel.repaint();
-    }
-
-    /**
-     * Adds a JLabel with an image to the player statistics panel.
-     *
-     * @param statName The name of the statistic.
-     * @param statValue The value of the statistic.
-     * @param imagePath The path to the image.
-     */
-    private static void addStatWithImage(String statName, String statValue, String imagePath) {
-        // Create a JPanel to hold both the stat label and image
-        JPanel statPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-
-        // Create a JLabel for the stat
-        JLabel statLabel = createStatLabel(statName + ": " + statValue);
-
-        // Create an ImageIcon for the image
-        ImageIcon imageIcon = new ImageIcon(imagePath);
-        Image image = imageIcon.getImage().getScaledInstance(20, 20, Image.SCALE_SMOOTH);
-        imageIcon = new ImageIcon(image);
-
-        // Create a JLabel for the image
-        JLabel imageLabel = new JLabel(imageIcon);
-
-        // Add the stat label and image label to the stat panel
-        statPanel.add(statLabel);
-        statPanel.add(imageLabel);
-
-        statPanel.setBackground(Constant.PLAYER_STATS_BACKGROUND_COLOR);
-
-        // Add the stat panel to the playerStatsPanel
-        playerStatsPanel.add(statPanel);
-    }
 
     private void initializePlayersPanel() {
         // JPanel for player interactions
@@ -870,64 +890,20 @@ private List<PlayerFrame> playerFrames;
         // Add buttons for player interactions
         for (Player player : listOfPlayer.getPlayers()) {
 
-            JButton helpButton = new JButton("Enroll - " + player.getName());
-            helpButton.setBackground(Constant.DRAW_BUTTON_BACKGROUND_COLOR);
-            helpButton.addActionListener(e -> Ally.requestHelp(player.getMe()));
-            playersPanel.add(helpButton);
-
-        }
-    }
-
-    public void updatePlayersPanel() {
-
-        playersPanel.removeAll();
-
-        // Add buttons for player interactions
-        for (Player player : listOfPlayer.getPlayers()) {
-
-            if (player != Play.getCurrentPlayer()) {
-                JButton helpButton = new JButton("Enroll - " + player.getName());
+            if(player.getName() == Play.curPlayer.getName()){
+                JButton helpButton = new JButton("Go Alone ->");
                 helpButton.setBackground(Constant.DRAW_BUTTON_BACKGROUND_COLOR);
+                setFont(helpButton, font);
                 helpButton.addActionListener(e -> Ally.requestHelp(player.getMe()));
                 playersPanel.add(helpButton);
-            } else {
-                JButton helpButton = new JButton("Fight Alone -> ");
+            }else{
+                JButton helpButton = new JButton("Enroll - " + player.getName() + "  " + Constant.PRICE_FOR_REQUESTING_HELP + " money");
                 helpButton.setBackground(Constant.DRAW_BUTTON_BACKGROUND_COLOR2);
+                setFont(helpButton, font);
                 helpButton.addActionListener(e -> Ally.requestHelp(player.getMe()));
                 playersPanel.add(helpButton);
             }
-
         }
-    }
-
-    
-    /**
-     * Initializes the map panel for displaying game actions.
-     */
-    private void initializeMapPanel() {
-        // JPanel for displaying game actions
-        mapPanel.setLayout(new BorderLayout());
-        mapPanel.setBackground(Constant.MAP_PANEL_BACKGROUND_COLOR);
-
-        // Create a titled border with an orange raised bevel border
-        Border border = BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(Color.ORANGE, 2),  // Orange border
-                BorderFactory.createBevelBorder(BevelBorder.RAISED, Color.ORANGE, Color.ORANGE)
-        );
-        TitledBorder titledBorder = BorderFactory.createTitledBorder(border, "Game Map");
-        titledBorder.setTitleColor(Color.ORANGE);
-        mapPanel.setBorder(titledBorder);
-
-        mapPanel.add(gameMap, BorderLayout.CENTER);
-    }
-
-    /**
-     * Gets the map panel.
-     *
-     * @return The map panel.
-     */
-    public MapPanel getMap() {
-        return this.gameMap;
     }
 
     /**
@@ -954,80 +930,64 @@ private List<PlayerFrame> playerFrames;
      * @param panel The panel to which buttons are added.
      */
     private void initializeDrawButtons(JPanel panel) {
+
         // Initialize buttons first with the current size of each deck
         drawDungeonButton = new JButton("Dungeon Deck: " + Dungeon.getDeckPile().size());
+        discardDungeonLabel = new JLabel("Dungeon Discard: " + Dungeon.getDiscardPile().size());
         drawTreasureButton = new JButton("Treasure Deck: " + Treasure.getDeckPile().size());
-
+        discardTreasureLabel = new JLabel("Treasure Discard: " + Treasure.getDiscardPile().size());
+    
+        setFont(drawDungeonButton, font);
+        setFont(drawTreasureButton, font);
+        setFont(discardDungeonLabel, font);
+        setFont(discardTreasureLabel, font);
+    
         // Create initial icons
         int initialButtonWidth = 100; // Adjust as needed
         int initialButtonHeight = 100; // Adjust as needed
         ImageIcon dunIcon = new ImageIcon(createResizedIcon("src/main/java/com/utmunchkin/gameplay/img/dungeon.png", initialButtonWidth, initialButtonHeight));
         ImageIcon treIcon = new ImageIcon(createResizedIcon("src/main/java/com/utmunchkin/gameplay/img/treasure.png", initialButtonWidth, initialButtonHeight));
-
+    
         // Set icons for buttons
         drawDungeonButton.setIcon(dunIcon);
         drawTreasureButton.setIcon(treIcon);
-
+    
         // Add action listeners
         drawDungeonButton.addActionListener(e -> {
             // Set a flag to indicate that the user wants to draw a dungeon card
             Play.getCurrentPlayer().setDrawDungeon(true);
         });
-
+    
         drawTreasureButton.addActionListener(e -> {
             Play.getCurrentPlayer().setDrawTreasure(true);
         });
-
+    
         // Add hover effects
         addHoverEffect(drawDungeonButton);
         addHoverEffect(drawTreasureButton);
-
+    
         // Set layout manager for the panel
-        panel.setLayout(new FlowLayout(FlowLayout.CENTER, 20, 20));
-
+        panel.setLayout(new GridLayout(2, 2, 20, 20)); // Adjust the gap between components as needed
+    
         // Add buttons to the panel with background and foreground colors
         drawDungeonButton.setBackground(Constant.DRAW_BUTTON_BACKGROUND_COLOR);
         drawDungeonButton.setForeground(Constant.DRAW_BUTTON_FOREGROUND_COLOR);
         panel.add(drawDungeonButton);
-
+    
         drawTreasureButton.setBackground(Constant.DRAW_BUTTON_BACKGROUND_COLOR);
         drawTreasureButton.setForeground(Constant.DRAW_BUTTON_FOREGROUND_COLOR);
         panel.add(drawTreasureButton);
-
+    
+        discardDungeonLabel.setBackground(Constant.DECK_PANEL_BACKGROUND_COLOR);
+        discardDungeonLabel.setForeground(Constant.INFO_TEXT_AREA_TEXT_COLOR);
+        panel.add(discardDungeonLabel);
+    
+        discardTreasureLabel.setBackground(Constant.DECK_PANEL_BACKGROUND_COLOR);
+        discardTreasureLabel.setForeground(Constant.INFO_TEXT_AREA_TEXT_COLOR);
+        panel.add(discardTreasureLabel);
     }
+    
 
-    /**
-     * Updates the text of the buttons with the current size of each deck.
-     */
-    public void updateDeckSizes() {
-        drawDungeonButton.setText("Dungeon Deck: " + Dungeon.getDeckPile().size());
-        drawTreasureButton.setText("Treasure Deck: " + Treasure.getDeckPile().size());
-    }
-
-    /**
-     * Creates a resized icon from the given image path.
-     *
-     * @param imagePath The path to the image.
-     * @param width     The width of the resized icon.
-     * @param height    The height of the resized icon.
-     * @return The resized icon.
-     */
-    private Image createResizedIcon(String imagePath, int width, int height) {
-        ImageIcon originalIcon = new ImageIcon(imagePath);
-        Image originalImage = originalIcon.getImage();
-
-        // Ensure that width and height are positive
-        width = Math.max(1, width);
-        height = Math.max(1, height);
-
-        // Create a BufferedImage to allow smoother scaling
-        BufferedImage bufferedImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
-        Graphics2D g2d = bufferedImage.createGraphics();
-        g2d.drawImage(originalImage, 0, 0, width, height, null);
-        g2d.dispose();
-
-        return bufferedImage.getScaledInstance(width, height, Image.SCALE_SMOOTH);
-    }
 
     /**
      * Initializes the player frames based on the game state.
@@ -1035,6 +995,8 @@ private List<PlayerFrame> playerFrames;
      * @param panel The panel to which player frames are added.
      */
     private void initializePlayerFrames(JPanel panel) {
+        //panel.removeAll();
+
         int numPlayers = Play.getPlayers().getSize();
         int columns = Math.min(numPlayers, 3); // Maximum number of columns for layout
         int rows = (int) Math.ceil((double) numPlayers / columns);
@@ -1052,6 +1014,9 @@ private List<PlayerFrame> playerFrames;
             int preferredHeight = getHeight() / rows - 20; // Adjust the spacing
             playerFrame.setPreferredSize(new Dimension(preferredWidth, preferredHeight));
 
+            // Appelez la méthode updatePlayerInfo pour mettre à jour les informations du joueur
+            playerFrame.updatePlayerInfo(Play.getPlayers().getPlayer(i).getName(), Play.getPlayers(), i);
+
             playerFrames.add(playerFrame);
             panel.add(playerFrame);
         }
@@ -1059,9 +1024,82 @@ private List<PlayerFrame> playerFrames;
         JScrollPane scrollPane = new JScrollPane(panel);
         scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
 
-        // Add the scroll pane to the main container
+        // Add the scroll pane to the main container (seulement lors de l'initialisation)
         add(scrollPane, BorderLayout.CENTER);
     }
+
+    /**
+     * Initializes the map panel for displaying game actions.
+     */
+    private void initializeMapPanel() {
+        // JPanel for displaying game actions
+        mapPanel.setLayout(new BorderLayout());
+        mapPanel.setBackground(Constant.MAP_PANEL_BACKGROUND_COLOR);
+
+        // Create a titled border with an orange raised bevel border
+        Border border = BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(Color.ORANGE, 2),  // Orange border
+                BorderFactory.createBevelBorder(BevelBorder.RAISED, Color.ORANGE, Color.ORANGE)
+        );
+        TitledBorder titledBorder = BorderFactory.createTitledBorder(border, "Game Map");
+        titledBorder.setTitleColor(Color.ORANGE);
+        mapPanel.setBorder(titledBorder);
+
+        mapPanel.add(gameMap, BorderLayout.CENTER);
+    }
+
+    //Update Methods---------------------------------------------------
+
+
+    /**
+     * Updates the text of the buttons with the current size of each deck.
+     */
+    public void updateDeckSizes() {
+        drawDungeonButton.setText("Dungeon Deck: " + Dungeon.getDeckPile().size());
+        drawTreasureButton.setText("Treasure Deck: " + Treasure.getDeckPile().size());
+        discardDungeonLabel.setText("Dungeon Discard :" + Dungeon.getDiscardPile().size());
+        discardTreasureLabel.setText("Treasure Discard :" + Treasure.getDiscardPile().size());
+        
+    }
+
+    public void updatePlayerFrames() {
+        // Supprimer tous les composants existants du panel
+        playerHandsPanel.removeAll();
+        playerFrames.clear();
+    
+        ListOfPlayer listOfPlayers = Play.getPlayers();
+        
+        int numPlayers = listOfPlayers.getSize();
+        int columns = Math.min(numPlayers, 3); // Maximum number of columns for layout
+        int rows = (int) Math.ceil((double) numPlayers / columns);
+    
+        playerHandsPanel.setLayout(new GridLayout(rows, columns, 10, 10)); // Adjust the gap as needed
+    
+        for (int i = 0; i < numPlayers; i++) {
+            PlayerFrame playerFrame = new PlayerFrame(listOfPlayers.getPlayer(i).getName(), listOfPlayers, i);
+    
+            // Set the background color of the PlayerFrame
+            playerFrame.setBackground(Constant.PLAYER_FRAME_BACKGROUND_COLOR);
+    
+            // Set the preferred size of the PlayerFrame based on the game window size
+            int preferredWidth = getWidth() / columns - 20; // Adjust the spacing
+            int preferredHeight = getHeight() / rows - 20; // Adjust the spacing
+            playerFrame.setPreferredSize(new Dimension(preferredWidth, preferredHeight));
+    
+            // Appelez la méthode updatePlayerInfo pour mettre à jour les informations du joueur
+            playerFrame.updatePlayerInfo(listOfPlayers.getPlayer(i).getName(), listOfPlayers, i);
+    
+            playerFrames.add(playerFrame);
+            playerHandsPanel.add(playerFrame);
+        }
+    
+        // Rafraîchir l'interface graphique après l'ajout des nouveaux PlayerFrames
+        revalidate();
+        repaint();
+    }
+    
+
+    
 
     
     /**
@@ -1070,10 +1108,76 @@ private List<PlayerFrame> playerFrames;
      * @param players The list of players containing updated statistics.
      */
     public void updatePlayerStats(ListOfPlayer players) {
-        for (int i = 0; i < playerFrames.size(); i++) {
-            PlayerFrame playerFrame = playerFrames.get(i);
-            Player player = players.getPlayer(i);
-            playerFrame.updateStats(player.getName(), player.getLevel(), player.getLives(), player.getMoney(), player.getCurse());
+
+        System.out.println("PlayerFrames size: " + playerFrames.size());
+    
+        // Ajoutez une condition pour éviter l'IndexOutOfBoundsException
+        if (!playerFrames.isEmpty()) {
+            for (int i = 0; i < players.getSize(); i++) {
+                PlayerFrame playerFrame = playerFrames.get(i);
+                Player player = players.getPlayer(i);
+                playerFrame.updateStats(player.getName(), player.getLevel(), player.getLives(), player.getMoney(), player.getCurse());
+            }
+        }
+    }
+    
+
+    /**
+     * Updates the player statistics panel based on the current player.
+     *
+     * @param currentPlayer The current player.
+     */
+    public static void updatePlayerStatsPanel(Player currentPlayer) {
+        
+        // Clear the player statistics panel before updating
+        playerStatsPanel.removeAll();
+
+        // Add the player's information to the panel
+        addStatWithImage("Name", currentPlayer.getName(), "src/main/java/com/utmunchkin/gameplay/img/stats/name.png");
+        addStatWithImage("Score", String.valueOf(currentPlayer.getScore()), "src/main/java/com/utmunchkin/gameplay/img/stats/level.png");
+        addStatWithImage("Level", String.valueOf(currentPlayer.getLevel()), "src/main/java/com/utmunchkin/gameplay/img/stats/level.png");
+        addStatWithImage("Lives", String.valueOf(currentPlayer.getLives()), "src/main/java/com/utmunchkin/gameplay/img/stats/lives.png");
+        addStatWithImage("Money", String.valueOf(currentPlayer.getMoney()), "src/main/java/com/utmunchkin/gameplay/img/stats/money.png");
+        addStatWithImage("Curse", String.valueOf(currentPlayer.getCurse()), "src/main/java/com/utmunchkin/gameplay/img/stats/curse.png");
+        addStatWithImage("Defense", String.valueOf(currentPlayer.getDefense()), "src/main/java/com/utmunchkin/gameplay/img/stats/defense.png");
+        addStatWithImage("Equip.", String.valueOf(currentPlayer.getEquippedObjectsNames()), "src/main/java/com/utmunchkin/gameplay/img/stats/equipement.png");
+        addStatWithImage("Attack", String.valueOf(currentPlayer.getAttackForce()), "src/main/java/com/utmunchkin/gameplay/img/stats/attack.png");
+
+        // Add any other statistics you want to display
+
+        // Set the background color of all JLabel components in playerStatsPanel to black
+        Arrays.stream(playerStatsPanel.getComponents())
+                .filter(component -> component instanceof JLabel)
+                .map(component -> (JLabel) component)
+                .forEach(label -> label.setBackground(Color.BLACK));
+
+        // Repaint the panel to reflect the changes
+        playerStatsPanel.revalidate();
+        playerStatsPanel.repaint();
+    }
+
+    public void updatePlayersPanel() {
+
+        playersPanel.removeAll();
+        // JPanel for player interactions
+        playersPanel.setLayout(new GridLayout(1, 0));
+
+        // Add buttons for player interactions
+        for (Player player : listOfPlayer.getPlayers()) {
+
+            if(player.getName() == Play.curPlayer.getName()){
+                JButton helpButton = new JButton("Go Alone ->");
+                helpButton.setBackground(Constant.DRAW_BUTTON_BACKGROUND_COLOR);
+                setFont(helpButton, font);
+                helpButton.addActionListener(e -> Ally.requestHelp(player.getMe()));
+                playersPanel.add(helpButton);
+            }else{
+                JButton helpButton = new JButton("Enroll - " + player.getName() + "  " + Constant.PRICE_FOR_REQUESTING_HELP + " money");
+                helpButton.setBackground(Constant.DRAW_BUTTON_BACKGROUND_COLOR2);
+                setFont(helpButton, font);
+                helpButton.addActionListener(e -> Ally.requestHelp(player.getMe()));
+                playersPanel.add(helpButton);
+            }
         }
     }
 
@@ -1085,6 +1189,11 @@ private List<PlayerFrame> playerFrames;
     public void updateInfo(String message) {
         infoTextArea.append(message + "\n");
     }
+
+
+
+
+    // Show Methods - Display-----------------------------------------
 
     /**
      * Displays an instruction dialog to inform the player.
@@ -1102,32 +1211,39 @@ private List<PlayerFrame> playerFrames;
         return null;  // The method no longer needs to return a value.
     }
 
+
     /**
-     * Sets the user's choice.
+     * Placeholder method for showing player stats (can be implemented if needed).
      *
-     * @param choice The user's choice.
+     * @param player The player whose stats are to be displayed.
      */
-    public void setChoice(int choice) {
-        this.choice = choice;
+    public void showPlayerStats(Player player) {
+        // Implement this method if needed
     }
 
-    /**
-     * Waits for user input using a latch.
-     */
-    public void waitForUserInput() {
-        try {
-            userInputLatch.await();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-    }
+
+    //Effects-------------------------------------------------------
+
+    //GLOBAL
 
     /**
-     * Resets the user input latch.
+     * Applies aesthetic effects such as rounded corners, reliefs, and shadows.
      */
-    public void resetUserInputLatch() {
-        userInputLatch = new CountDownLatch(1);
+    private void applyAestheticEffects() {
+
+        // Apply reliefs and shadows to panels and buttons
+        applyReliefsAndShadows(deckPanel);
+        applyReliefsAndShadows(playersPanel);
+        applyReliefsAndShadows(playerHandsPanel);
+        applyReliefsAndShadows(playerStatsPanel);
+        applyReliefsAndShadows(mapPanel);
+        applyReliefsAndShadows(otherAttributesPanel);
+
+        // Apply reliefs and shadows to buttons
+        applyReliefsAndShadowsToButtons(drawDungeonButton, drawTreasureButton);
     }
+
+    //HOVER================================================================================
 
     /**
      * Adds a hover effect to a JButton.
@@ -1148,18 +1264,190 @@ private List<PlayerFrame> playerFrames;
                 button.setBackground(Constant.DRAW_BUTTON_BACKGROUND_COLOR);
                 button.setForeground(Constant.DRAW_BUTTON_FOREGROUND_COLOR);
                 button.setBorder(BorderFactory.createEmptyBorder());
+                setEmbossedEffect(button);
             }
         });
     }
 
-    /**
-     * Placeholder method for showing player stats (can be implemented if needed).
-     *
-     * @param player The player whose stats are to be displayed.
-     */
-    public void showPlayerStats(Player player) {
-        // Implement this method if needed
+    
+    //EMBOSSED=============================================================================
+
+    public static void setEmbossedEffect(JComponent element) {
+        Border border = BorderFactory.createCompoundBorder(
+                BorderFactory.createRaisedBevelBorder(),
+                BorderFactory.createLoweredBevelBorder()
+        );
+        element.setBorder(border);
     }
+
+    //HIDDEN===============================================================================
+
+    public static void setHiddenEffect(JComponent element) {
+        element.setVisible(false);
+    }
+
+
+    //FONT=================================================================================
+
+    // Example:
+    // Font customFont = loadFontFromFile("path/to/your/font.ttf", Font.PLAIN, 20);
+
+    private static Font loadFontFromFile(String path, int style, int size) {
+        try {
+            Font customFont = Font.createFont(Font.TRUETYPE_FONT, new java.io.File(path));
+            return customFont.deriveFont(style, size);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    public static void setFont(JComponent element, String fontName, int fontStyle, int fontSize) {
+        Font font = new Font(fontName, fontStyle, fontSize);
+        element.setFont(font);
+    }
+
+    public static void setFont(JComponent element, Font font) {
+        element.setFont(font);
+    }
+
+    //BORDER=================================================================================
+
+    
+
+    public void borderAllElements(Color color) {
+        setBorderForElement(drawDungeonButton, color);
+        setBorderForElement(drawTreasureButton, color);
+        setBorderForElement(infoTextArea, color);
+        setBorderForElement(mainInfoArea, color);
+        setBorderForElement(deckPanel, color);
+        setBorderForElement(otherAttributesPanel, color);
+        setBorderForElement(mapPanel, color);
+        setBorderForElement(playersPanel, color);
+        setBorderForElement(playerHandsPanel, color);
+        setBorderForElement(playerStatsPanel, color);
+        for (PlayerFrame playerFrame : playerFrames) {
+            setBorderForElement(playerFrame, color);
+        }
+    }
+
+    public void setBorderForElement(JComponent element, Color color) {
+        Border border = BorderFactory.createLineBorder(color, 5);
+        element.setBorder(border);
+    }
+
+    
+    //RELIEF=================================================================================
+
+    /**
+     * Applies reliefs and shadows to the specified panels and buttons.
+     *
+     * @param components The components to which effects will be applied.
+     */
+    private void applyReliefsAndShadows(Component... components) {
+        for (Component component : components) {
+            if (component instanceof JPanel) {
+                // Apply a bevel border with lowered type for panels
+                ((JPanel) component).setBorder(BorderFactory.createBevelBorder(BevelBorder.LOWERED));
+            } else if (component instanceof JButton) {
+                // Apply a raised bevel border for buttons
+                ((JButton) component).setBorder(BorderFactory.createRaisedBevelBorder());
+            }
+        }
+    }
+
+    /**
+     * Applies reliefs and shadows to the specified buttons.
+     *
+     * @param buttons The buttons to which effects will be applied.
+     */
+    private void applyReliefsAndShadowsToButtons(JButton... buttons) {
+        for (JButton button : buttons) {
+            // Apply a raised bevel border for buttons
+            button.setBorder(BorderFactory.createRaisedBevelBorder());
+
+            // Add a drop shadow effect using a custom border
+            button.setBorder(BorderFactory.createCompoundBorder(
+                    button.getBorder(),
+                    BorderFactory.createEmptyBorder(5, 5, 5, 5)
+            ));
+        }
+    }
+
+    //REMOVE==================================================================================
+
+
+    //border________________________________________________
+
+    public void removeBorderForElement(JComponent element) {
+        element.setBorder(null);
+    }
+
+    public void removeBorderForAllElements() {
+        removeBorderForElement(drawDungeonButton);
+        removeBorderForElement(drawTreasureButton);
+        removeBorderForElement(infoTextArea);
+        removeBorderForElement(mainInfoArea);
+        removeBorderForElement(deckPanel);
+        removeBorderForElement(otherAttributesPanel);
+        removeBorderForElement(mapPanel);
+        removeBorderForElement(playersPanel);
+        removeBorderForElement(playerHandsPanel);
+        removeBorderForElement(playerStatsPanel);
+        for (PlayerFrame playerFrame : playerFrames) {
+            removeBorderForElement(playerFrame);
+        }
+    }
+
+
+    //all_effects_____________________________________________
+
+    public static void removeEffects(JComponent element) {
+        element.setBorder(null);
+        element.setVisible(true);
+        element.setFont(null);
+    }
+
+
+
+
+    //Input Latch---------------------------------------------------
+
+    /**
+     * Waits for user input using a latch.
+     */
+    public void waitForUserInput() {
+        try {
+            userInputLatch.await();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Resets the user input latch.
+     */
+    public void resetUserInputLatch() {
+        userInputLatch = new CountDownLatch(1);
+    }
+
+    
+
+    //Players Management--------------------------------------------
+
+
+    /**
+     * Sets the user's choice.
+     *
+     * @param choice The user's choice.
+     */
+    public void setChoice(int choice) {
+        this.choice = choice;
+    }
+
+
+    // Frames--------------------------------------------------------
+
 
     /**
      * Retrieves the list of player frames.
@@ -1170,6 +1458,90 @@ private List<PlayerFrame> playerFrames;
         return this.playerFrames;
     }
 
+
+
+    //----------------------------------------------------------------
+
+
+
+    // Flag for start game
+
+    public void setPlayFlag(boolean playFlag) {
+        this.playFlag = playFlag;
+    }
+
+    public boolean getPlayFlag(){
+        return this.playFlag;
+    }
+
+    private void waitForPlayButton() {
+        while (!playFlag) {
+            try {
+                // Sleep for a short duration to avoid freezing the UI
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+
+    // Getters---------------------------------------------------------
+
+    /**
+     * Gets the map panel.
+     *
+     * @return The map panel.
+     */
+    public MapPanel getMap() {
+        return this.gameMap;
+    }
+
+
+    // Getters for JComponents-----------------------------------------
+
+    public JButton getDrawDungeonButton() {
+        return drawDungeonButton;
+    }
+
+    public JButton getDrawTreasureButton() {
+        return drawTreasureButton;
+    }
+
+    public JTextArea getInfoTextArea() {
+        return infoTextArea;
+    }
+
+    public static JLabel getMainInfoArea() {
+        return mainInfoArea;
+    }
+
+    public JPanel getDeckPanel() {
+        return deckPanel;
+    }
+
+    public JPanel getOtherAttributesPanel() {
+        return otherAttributesPanel;
+    }
+
+    public JPanel getMapPanel() {
+        return mapPanel;
+    }
+
+    public JPanel getPlayersPanel() {
+        return playersPanel;
+    }
+
+    public JPanel getPlayerHandsPanel() {
+        return playerHandsPanel;
+    }
+
+    public static JPanel getPlayerStatsPanel() {
+        return playerStatsPanel;
+    }
+
+
+    //Sub Classes
 
     public static class DrawPileWindow extends JFrame {
 
@@ -1198,13 +1570,5 @@ private List<PlayerFrame> playerFrames;
             dungeonLabel.setText("Dungeon Draw Pile: " + Dungeon.getDeckPile());
         }
     }
-
-    public void setPlayFlag(boolean playFlag) {
-        this.playFlag = playFlag;
-    }
-
-    public boolean getPlayFlag(){
-        return this.playFlag;
-    }
-
 }
+

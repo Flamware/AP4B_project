@@ -143,7 +143,7 @@ public class Card extends CardData {
             super();
             this.setLevel(card.cardInfo.getLevelBonus());
             this.setMonsterCombatStrength(card.cardInfo.getLevelBonus());
-            this.setTreasure(getMonsterCombatStrengthMonster() / 2);
+            this.setTreasure((int) (getMonsterCombatStrengthMonster() * Constant.TRASURES_COEFF));
         }
 
         /**

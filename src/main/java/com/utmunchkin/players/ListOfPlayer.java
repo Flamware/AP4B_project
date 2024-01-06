@@ -157,4 +157,26 @@ public class ListOfPlayer implements Serializable{
     private interface ActionResetter {
         void reset(Player player);
     }
+
+    public boolean removePlayerByName(String name) {
+        Player playerToRemove = null;
+
+        // Find the player with the specified name
+        for (Player player : players) {
+            if (player.getName().equals(name)) {
+                playerToRemove = player;
+                break;
+            }
+        }
+
+        // Remove the player if found
+        if (playerToRemove != null) {
+            players.remove(playerToRemove);
+            System.out.println("Player removed: " + name);
+            return true;
+        } else {
+            System.out.println("Player not found: " + name);
+            return false;
+        }
+    }
 }

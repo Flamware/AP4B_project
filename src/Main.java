@@ -1,19 +1,21 @@
 import main.java.com.utmunchkin.Rules;
+import main.java.com.utmunchkin.Interface.Interact;
 import main.java.com.utmunchkin.gameplay.Play;
 import main.java.com.utmunchkin.players.ListOfPlayer;
 import main.java.com.utmunchkin.players.Player;
 
-import javax.swing.*;
-import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+import java.util.List;
+
 
 /**
  * The main class that contains the main method to start the Munchkin game.
  */
 public class Main {
 
+    //rules represents the rules of the game (turn management ...)
     private static Rules rules;
+
+    
 
     /**
      * The entry point of the program.
@@ -37,63 +39,6 @@ public class Main {
         public static void play() {
             initializePlayers();
             startGame();
-
-            
-            // Create the main menu window
-            /*
-            JFrame frame = new JFrame("Main Menu");
-            frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-            frame.setSize(400, 200);
-
-            // Create a panel to organize components
-            JPanel panel = new JPanel();
-            panel.setLayout(new GridLayout(3, 1));
-
-            // Play button
-            JButton playButton = new JButton("Play");
-            playButton.addActionListener(new ActionListener() {
-                @Override
-                public void actionPerformed(ActionEvent e) {
-                    frame.dispose();
-                    // Execute code when the "Play" button is clicked
-                    startGame();
-                }
-            });
-
-            // Options button
-            JButton optionsButton = new JButton("Options");
-            optionsButton.addActionListener(new ActionListener() {
-                @Override
-                public void actionPerformed(ActionEvent e) {
-                    // Execute code when the "Options" button is clicked
-                    JOptionPane.showMessageDialog(frame, "Access options.");
-                }
-            });
-
-            // Records button
-            JButton recordsButton = new JButton("Records");
-            recordsButton.addActionListener(new ActionListener() {
-                @Override
-                public void actionPerformed(ActionEvent e) {
-                    // Execute code when the "Records" button is clicked
-                    JOptionPane.showMessageDialog(frame, "View records.");
-                }
-            });
-
-            // Add buttons to the panel
-            panel.add(playButton);
-            panel.add(optionsButton);
-            panel.add(recordsButton);
-
-            // Add the panel to the window
-            frame.add(panel);
-
-            // Center the window
-            frame.setLocationRelativeTo(null);
-
-            // Make the window visible
-            frame.setVisible(true);*/
-            
         }
 
         /**
@@ -102,10 +47,18 @@ public class Main {
         private static void initializePlayers() {
             rules = new Rules();
             list = new ListOfPlayer();
-            list.addPlayer(new Player("Player 1", 1));
-            list.addPlayer(new Player("Player 2", 2));
-            list.addPlayer(new Player("Player 3", 3));
-            list.addPlayer(new Player("Player 4", 4));
+
+            // Get the number of players
+            int numberOfPlayers = Interact.showPlayerNumberDialog();
+
+            // Get player names
+            List<String> playerNames = Interact.showPlayerNameDialog(numberOfPlayers);
+
+            // Add players to the list
+            for (int i = 0; i < playerNames.size(); i++) {
+                list.addPlayer(new Player(playerNames.get(i), i + 1));
+            }
+
             rules.setTurn(list);
 
             System.out.println(list.getPlayers());

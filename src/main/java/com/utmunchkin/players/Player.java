@@ -185,6 +185,14 @@ public class Player extends ListOfPlayer {
         return defense;
     }
 
+    public void decreaseDefense(int i) {
+        this.defense = this.defense - i;
+        Interact.showMessageDialog("Defense decreased: " + i);
+        if(this.defense < 0){
+            this.defense = 0;
+        }
+    }
+
     /**
      * Gets the player itself.
      *
@@ -192,6 +200,18 @@ public class Player extends ListOfPlayer {
      */
     public Player getMe() {
         return this;
+    }
+
+    public boolean isDead(){
+        return this.isDead;
+    }
+
+    public void becomeDead(){
+        this.isDead = true;
+    }
+
+    public void becomeAlive(){
+        this.isDead = false;
     }
 
     /**
@@ -240,6 +260,12 @@ public class Player extends ListOfPlayer {
                 }
                 hand.remove(card);
                 Interact.showMessageDialog("The shop is full of items, discarded!");
+
+                if(card.getInfo().getCardType() == CardType.DUNGEON){
+                    Dungeon.discard(card);
+                }else{
+                    Treasure.discard(card);
+                }
             }
 
             // Display a confirmation message for the successful sale
@@ -425,7 +451,10 @@ public class Player extends ListOfPlayer {
      */
     public void addScore(int score) {
         this.score += score;
-        ;
+        if(score >= 100){
+            this.level++;
+            score = 0;
+        }
     }
 
     /**
@@ -521,13 +550,18 @@ public class Player extends ListOfPlayer {
      * @param lives Le nombre de vies à ajouter.
      */
     public void addLives(int lives) {
-        if(this.lives < 20){
+        if(this.lives < 100){
             this.lives += lives;
         }
         
         if (this.lives <= 0) {
             this.lives = 0;
             this.isDead = true;
+            System.out.println("This player is dead !");
+        }
+
+        if(this.lives >100){
+            this.lives = 100;
         }
     }
 
@@ -822,4 +856,5 @@ public class Player extends ListOfPlayer {
     public boolean isDrawTreasure() {
         return drawTreasure;
     }
+
 }

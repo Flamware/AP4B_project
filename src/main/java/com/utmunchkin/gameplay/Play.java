@@ -3,7 +3,10 @@ package main.java.com.utmunchkin.gameplay;
 import java.awt.Color;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Random;
+
 import javax.swing.*;
 
 import main.java.com.utmunchkin.Constant;
@@ -13,6 +16,7 @@ import main.java.com.utmunchkin.Interface.Shop;
 import main.java.com.utmunchkin.Rules;
 import main.java.com.utmunchkin.cards.*;
 import main.java.com.utmunchkin.cards.CardData.SubType;
+import main.java.com.utmunchkin.cards.CardData.CardType;
 import main.java.com.utmunchkin.cards.CardData.MonstersType;
 import main.java.com.utmunchkin.players.Ally;
 import main.java.com.utmunchkin.players.ListOfPlayer;
@@ -28,8 +32,8 @@ public class Play implements CardsActions {
     private static ListOfPlayer players;
     private boolean gameWon;
     private Cards cardsOfGame;
-    private final Dungeon dungeonCard;
-    private final Treasure treasureCard;
+    private final Dungeon dungeon;
+    private final Treasure treasure;
     private Rules rules;
     private Board board;
     private Shop shop;
@@ -50,13 +54,13 @@ public class Play implements CardsActions {
         this.currentPlayerIndex = firstPlayerIndex;
         this.gameWon = false;
         this.firstPlayer = firstPlayerIndex;
-        System.out.println("check0");
+        //System.out.println("check0");
         this.cardsOfGame = new Cards();
-        System.out.println("check1");
-        this.dungeonCard = new Dungeon();
-        System.out.println("checkbis-ter");
-        this.treasureCard = new Treasure();
-        System.out.println("check2");
+        //System.out.println("check1");
+        this.dungeon = new Dungeon();
+        //System.out.println("checkbis-ter");
+        this.treasure = new Treasure();
+        //System.out.println("check2");
     }
 
     // Method to distribute cards and initialize the game
@@ -73,6 +77,9 @@ public class Play implements CardsActions {
             }
             System.out.println("\n");
         }
+
+        // Setup the current player (used in Board class)
+        setCurrentPlayer(players.getPlayer(currentPlayerIndex));
         board = new Board();
 
         shop = new Shop();
@@ -95,58 +102,70 @@ public class Play implements CardsActions {
             // Setup the current player
             setCurrentPlayer(players.getPlayer(currentPlayerIndex));
             Player currentPlayer = getCurrentPlayer();
+            board.updatePlayersPanel();
 
-            // Update player statistics panel on the board
-            Board.updatePlayerStatsPanel(currentPlayer);
-            mapPanel.performGameAction('M', 0, 2);
+            if(!currentPlayer.isDead()){
+                // Update player statistics panel on the board
+                Board.updatePlayerStatsPanel(currentPlayer);
+                mapPanel.performGameAction('M', 0, 2);
 
-            // Hide frames of other players except for the current player
-            hideOtherPlayerFramesAndEnlargeCurrentPlayerFrame();
+                // Hide frames of other players except for the current player
+                hideOtherPlayerFramesAndEnlargeCurrentPlayerFrame();
 
-            // Display information about the current player's turn on the board
-            board.updateInfo("Player's Turn: " + currentPlayer.getName());
+                // Display information about the current player's turn on the board
+                board.updateInfo("Player's Turn: " + currentPlayer.getName());
 
-            // Handle curse effects if the player is cursed
-            if (currentPlayer.getCurse()) {
-                handleCurseEffect(currentPlayer);
+                // Handle curse effects if the player is cursed
+                if (currentPlayer.getCurse()) {
+                    handleCurseEffect(currentPlayer);
+                }
+
+                // Debugging information
+                System.out.println("Check 1");
+                System.out.println("Monster encountered?: " + currentPlayer.hasEncounteredMonster());
+
+                Board.setMainInfoText("PREPARE FOR FIGHT : ALLIES");
+                Ally.setHelpRequested(false);
+                mapPanel.performGameAction('O', 1, 2);
+
+                do {
+                    // Attendez que le joueur clique sur un bouton ou effectue une action
+                    Ally.waitForHelp();
+                } while (!Ally.getHelpRequested());
+                
+                if(!currentPlayer.isDead()){
+                    Board.setMainInfoText("FIGHT PHASE");
+                    // Execute phases related to encountering monsters and looting rooms
+                    lookForTroubleAndLootTheRoomPhases(currentPlayer);
+                }
+
+                if(!currentPlayer.isDead()){
+                    Board.setMainInfoText("CHARITY PHASE");
+                    // Execute the charity phase
+                    charityPhase(currentPlayer, players);
+                }
+
+                // Update player statistics on the board
+                board.updatePlayerStats(players);
+
+                // Execute the end turn phase
+                endTurnPhase(currentPlayer);
+
+                if(!currentPlayer.isDead()){
+                    // Check if the game is won by the current player
+                    checkGameWon(currentPlayer);
+                    
+                    // Move to the next player's turn
+                    currentPlayerIndex = (currentPlayerIndex + 1) % players.getSize();
+                }
+
+                // Update player statistics for all players
+                updatePlayersStats();
+
+                currentPlayerIndex = (currentPlayerIndex) % players.getSize();
             }
 
-            // Debugging information
-            System.out.println("Check 1");
-            System.out.println("Monster encountered?: " + currentPlayer.hasEncounteredMonster());
-
-            Board.setMainInfoText("PREPARE FOR FIGHT : ALLIES");
-            Ally.setHelpRequested(false);
-            mapPanel.performGameAction('O', 1, 2);
-
-            do {
-                // Attendez que le joueur clique sur un bouton ou effectue une action
-                Ally.waitForHelp();
-            } while (!Ally.getHelpRequested());
             
-
-            Board.setMainInfoText("FIGHT PHASE");
-            // Execute phases related to encountering monsters and looting rooms
-            lookForTroubleAndLootTheRoomPhases(currentPlayer);
-
-            Board.setMainInfoText("CHARITY PHASE");
-            // Execute the charity phase
-            charityPhase(currentPlayer, players);
-
-            // Update player statistics on the board
-            board.updatePlayerStats(players);
-
-            // Execute the end turn phase
-            endTurnPhase(currentPlayer);
-
-            // Check if the game is won by the current player
-            checkGameWon(currentPlayer);
-
-            // Update player statistics for all players
-            updatePlayersStats();
-
-            // Move to the next player's turn
-            currentPlayerIndex = (currentPlayerIndex + 1) % players.getSize();
         }
     }
 
@@ -218,7 +237,7 @@ public class Play implements CardsActions {
         mapPanel.moveRight();
 
         // Reveal the first card from the Dungeon deck
-        Card revealedCard = dungeonCard.removeFirstFromDeck();
+        Card revealedCard = dungeon.removeFirstFromDeck();
         board.updateDeckSizes();
         SubType cardSubType = revealedCard.getInfo().getSubType();
 
@@ -228,6 +247,7 @@ public class Play implements CardsActions {
         // Apply immediate effects of monster and curse cards
         if (this.isMonsterType(cardSubType) || revealedCard.getInfo().getSubType() == SubType.CURSE) {
             handleRevealedCardEffect(player, revealedCard);
+            Dungeon.discard(revealedCard);
             // Update the player stats panel on the board
             Board.updatePlayerStatsPanel(curPlayer);
             return true;
@@ -387,11 +407,41 @@ public class Play implements CardsActions {
      */
     private void endTurnPhase(Player player) {
         player.setHasEncounteredMonster(false);
-        checkHandAndDraw();
 
+        for(Player p: players.getPlayers()){
+            if(p != curPlayer && p.isDead()){
+                players.removePlayerByName(p.getName());
+            }
+        }
+    
+        if (curPlayer.isDead()) {
+            Interact.showMessageDialog("You are dying ! Select a player and give him/her all your stuff");
+            Player recipient = askPlayerForRecipient(players);
+    
+            // Utiliser un itérateur pour parcourir et modifier la main du joueur
+            Iterator<Card> iterator = curPlayer.getHand().iterator();
+            while (iterator.hasNext()) {
+                Card card = iterator.next();
+                recipient.addToHand(card);
+                iterator.remove();  // Utiliser l'itérateur pour supprimer en toute sécurité l'élément de la liste
+            }
+
+            players.removePlayerByName(curPlayer.getName());
+            board.updatePlayerFrames();
+            refreshFrames(players);
+        } else {
+            checkHandAndDraw();
+        }
+
+        if(players.getSize() <= 1){
+            setGameWon(true);
+            Interact.showMessageDialog("The last player alive is " + players.getPlayers().get(0) + ". WINNER !");
+        }
+    
         // Update the player frames and stats panel
         //refreshFrames();
     }
+    
 
 
     //---------------------------------------------------------------------------------------------------------
@@ -460,29 +510,59 @@ public class Play implements CardsActions {
                 "Player's combat strength: " + playerCombatStrength + "\n" +
                 "Allies force: " + Ally.getAlliesForce() + "\n" +
                 "Monster's combat strength: " + selectedMonster.getMonsterCombatStrength(selectedMonster));
+                Random random = new Random();
+                int randomMonsterState = random.nextInt(4);
+                double coeffOfForce;
+
+                switch (randomMonsterState) {
+                    case 0:
+                        coeffOfForce = 1;
+                        break;
+                    case 1:
+                        coeffOfForce = 1.5;
+                        Interact.showMessageDialog("Monster is annoyed, strength updated !" + selectedMonster.getMonsterCombatStrength(selectedMonster) * coeffOfForce);
+                        break;
+                    case 2:
+                        coeffOfForce = 2;
+                        Interact.showMessageDialog("Monster found an offensive object, strength updated !" + selectedMonster.getMonsterCombatStrength(selectedMonster) * coeffOfForce); 
+                        break;
+                    case 3:
+                        coeffOfForce = 3;
+                        Interact.showMessageDialog("Monster is FURIOUS !!, strength updated !" + selectedMonster.getMonsterCombatStrength(selectedMonster) * coeffOfForce);
+                        break;
+                
+                    default:
+                        coeffOfForce = 1;
+                        break;
+                }
 
         if (Interact.yesOrNoDialog("Fight? " + selectedMonster.getCardName()).equals("Yes")) {
-            if (playerCombatStrength >= selectedMonster.getMonsterCombatStrength(selectedMonster)) {
+            if (playerCombatStrength >= selectedMonster.getMonsterCombatStrength(selectedMonster) * coeffOfForce) {
                 // Use the graphical interface to display the victory message
                 Interact.showMessageDialog("You have defeated the monster!");
                 mapPanel.setCellColor(mapPanel.getPX(), mapPanel.getPY(), Color.GREEN);
-                int levelsGained = Math.min(2, selectedMonster.getLevels());
-                player.gainLevel(levelsGained);
+
+                int scoreGained = (int) ((selectedMonster.getMonsterCombatStrength(selectedMonster) * coeffOfForce) / 2);
+                player.addScore(scoreGained);
+
                 int treasuresGained = selectedMonster.getTreasures();
                 gainTreasures(treasuresGained, player);
-                Interact.showMessageDialog("You got " + levelsGained + " level(s) and " + treasuresGained + " treasure(s).");
+
+                Interact.showMessageDialog("You got " + scoreGained + " score (100 score -> +1 level) and " + treasuresGained + " treasure(s).");
             } else {
                 // Use the graphical interface to display the defeat message
                 Interact.showMessageDialog("You must flee from the monster. You lost 1 level.");
                 player.loseLevel(1);
+
                 CardEffects.applyEffect(selectedMonster, curPlayer, players, board);
                 mapPanel.setCellColor(mapPanel.getPX(), mapPanel.getPY(), Color.ORANGE);
             }
         } else {
+            int lost = selectedMonster.getMonsterCombatStrength(selectedMonster)/ 10;
             System.out.println("You flee from the monster (lost money and level)");
-            Interact.showMessageDialog("You must flee from the monster. You lost 1 level.");
+            Interact.showMessageDialog("You must flee from the monster. You lost 1 level and " + lost + " money.");
             player.loseLevel(1);
-            player.addMoney(-2);
+            player.addMoney(-lost);
         }
         Board.updatePlayerStatsPanel(curPlayer);
         player.updateAttackForce(player.getEquippedObjects());
@@ -589,8 +669,6 @@ public class Play implements CardsActions {
         return null;
     }
 
-
-    // Method to give excess cards from a donor to another player
     /**
      * Gives excess cards from the donor player to a recipient player during the charity phase.
      * @param donor   The player giving excess cards.
@@ -598,32 +676,72 @@ public class Play implements CardsActions {
      */
     private void giveExcessCards(Player donor, ListOfPlayer listPlayers) {
         if (donor.getHand().size() >= 5) {
-            List<Card> excessCards = donor.getHand().subList(5, donor.getHand().size());
+            // Prompt the player to select cards to give
+            List<Card> selectedCards = askPlayerForCardsToGive(donor);
 
-            // Ask the player to whom they want to give the excess cards
-            Player recipient = askPlayerForRecipient(listPlayers);
+            // Check if the player selected some cards
+            if (!selectedCards.isEmpty()) {
+                curPlayer.setBoardActionAuthorized(true);
 
-            // Ensure a player has been selected
-            if (recipient != null) {
-                // Transfer the cards
-                recipient.addToHand(excessCards);
-                donor.removeFromHand(excessCards);
+                // Ask the player to whom they want to give the excess cards
+                Player recipient = askPlayerForRecipient(listPlayers);
 
-                Interact.showMessageDialog(donor.getName() + " gave the excess cards to " + recipient.getName());
-                refreshFrames(players);
+                // Ensure a player has been selected
+                if (recipient != null) {
+                    // Transfer the selected cards
+                    recipient.addToHand(selectedCards);
+                    donor.removeFromHand(selectedCards);
+
+                    Interact.showMessageDialog(donor.getName() + " gave the selected cards to " + recipient.getName());
+                    refreshFrames(players);
+                } else {
+                    Interact.showMessageDialog("The player did not select a recipient. No transfer was made.");
+                    refreshFrames(players);
+                }
             } else {
-                Interact.showMessageDialog("The player did not select a recipient. No transfer was made.");
+                Interact.showMessageDialog("No cards selected. No transfer was made.");
                 refreshFrames(players);
             }
         } else {
             System.out.println("Not enough cards to give");
 
             // Propose to the player to draw cards to reach 5 cards
-            while (donor.getHand().size() < 5) {
+            while (donor.getHand().size() < Constant.NUMBER_OF_CARDS_AFTER_GIVING_EXCESS) {
                 drawDungeonCard();
             }
         }
     }
+
+    /**
+     * Asks the player to select cards to give during the charity phase.
+     * @param donor The player giving excess cards.
+     * @return The list of selected cards.
+     */
+    private List<Card> askPlayerForCardsToGive(Player donor) {
+        List<Card> selectedCards = new ArrayList<>();
+
+        Interact.showMessageDialog("Select cards to give from your hand (maximum 5):");
+
+        while (selectedCards.size() < 5) {
+            // Display the player's hand and allow them to select cards
+            int selectedCardIndex = Interact.showCardSelectionDialog(donor.getHand());
+
+            // Check if the player canceled the selection
+            if (selectedCardIndex == -1) {
+                break;
+            }
+
+            // Add the selected card to the list
+            Card selectedCard = donor.getHand().get(selectedCardIndex);
+            selectedCards.add(selectedCard);
+
+            // Remove the selected card from the player's hand
+            donor.removeFromHand(selectedCard);
+        }
+
+        return selectedCards;
+    }
+
 
     // Method representing the "Play Excess Card" action for the player
     /**
@@ -688,6 +806,12 @@ public class Play implements CardsActions {
             System.out.println("Card played");
         } else {
             System.out.println("No special effect for card: " + cardToPlay.getCardName());
+        }
+
+        if(cardToPlay.getInfo().getCardType() == CardType.DUNGEON){
+            Dungeon.discard(cardToPlay);
+        }else{
+            Treasure.discard(cardToPlay);
         }
     }
 
@@ -788,7 +912,7 @@ public class Play implements CardsActions {
         // Draw the treasure cards
         List<Card> treasureCards = new ArrayList<>();
         for (int i = 0; i < count; i++) {
-            treasureCards.add(treasureCard.removeFirstFromDeck());
+            treasureCards.add(treasure.removeFirstFromDeck());
             board.updateDeckSizes();
         }
 
@@ -820,7 +944,7 @@ public class Play implements CardsActions {
         player.setDrawDungeon(false);
 
         // Draw the dungeon card
-        Dungeon drawnCard = dungeonCard;
+        Dungeon drawnCard = dungeon;
         player.addToHand(drawnCard.removeFirstFromDeck());
         board.updateInfo(player.getName() + " has drawn a face-down Dungeon card: " + drawnCard.getCardName());
         board.updateDeckSizes();
@@ -861,6 +985,10 @@ public class Play implements CardsActions {
         for (Player p : playersList) {
             // Call the updatePlayerHand method to update the player's hand display
             board.getPlayerFrames().get(playersList.indexOf(p)).updatePlayerHand(p.getHand());
+
+            /*if(curPlayer.isDead() && board.getPlayerFrames().get(playersList.indexOf(p)) != board.getPlayerFrames().get(playersList.indexOf(curPlayer))){
+                board.getPlayerFrames().get(playersList.indexOf(p)).setVisible(false);
+            }*/
 
             // Add calls to the graphical interface here to update the display
             System.out.println("Player hand updated: " + p.getName());
@@ -964,7 +1092,7 @@ public class Play implements CardsActions {
      * @return The dungeon card.
      */
     public Dungeon getDungeonCard() {
-        return dungeonCard;
+        return dungeon;
     }
 
     // Get the treasure card
@@ -973,7 +1101,7 @@ public class Play implements CardsActions {
      * @return The treasure card.
      */
     public Treasure getTreasureCard() {
-        return treasureCard;
+        return treasure;
     }
 
 

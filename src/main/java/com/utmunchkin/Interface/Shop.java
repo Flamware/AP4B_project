@@ -9,6 +9,8 @@ import main.java.com.utmunchkin.players.Player;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.util.ArrayList;
@@ -117,10 +119,17 @@ public class Shop {
             // Ajoutez des boutons d'achat et de vente
             JButton buyButton = new JButton("Acheter");
             JButton sellButton = new JButton("Vendre");
+            JButton quitButton = new JButton("Quitter");
 
             buyButton.addActionListener(e -> handleBuyButtonClick());
             sellButton.addActionListener(e -> handleSellButtonClick());
-
+            quitButton.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    dispose();
+                    playerMadeChoice = true;
+                }
+            });
 
             // Ajoutez un gestionnaire d'événements pour détecter la fermeture de la fenêtre
             addWindowListener(new WindowAdapter() {
@@ -134,6 +143,7 @@ public class Shop {
             JPanel buttonPanel = new JPanel();
             buttonPanel.add(buyButton);
             buttonPanel.add(sellButton);
+            buttonPanel.add(quitButton);
 
             add(statsPanel, BorderLayout.NORTH);
             add(cardstatsPanel, BorderLayout.CENTER);

@@ -124,4 +124,8 @@ public class Dungeon extends Cards {
             return null; // or throw an exception, depending on your design choice
         }
     }
+
+    public static void discard(Card card){
+        discardPile.add(card);
+    }
 }

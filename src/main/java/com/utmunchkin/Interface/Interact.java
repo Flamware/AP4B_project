@@ -4,18 +4,88 @@ import main.java.com.utmunchkin.Constant;
 import main.java.com.utmunchkin.cards.Card;
 
 import javax.swing.*;
+
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+
 import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * The Interact class provides methods for displaying graphical user interface elements and handling user interactions.
  */
 public class Interact {
     private static int selectedButtonIndex;
+
+
+    /**
+     * Displays a dialog to get the number of players.
+     *
+     * @return The selected number of players.
+     */
+    public static int showPlayerNumberDialog() {
+        String[] options = new String[Constant.INITIAL_CAPACITY - 1];
+        for (int i = 0; i < options.length; i++) {
+            options[i] = Integer.toString(i + 2);
+        }
+
+        String selectedOption = (String) JOptionPane.showInputDialog(
+                null,
+                "Select the number of players:",
+                "Number of Players",
+                JOptionPane.PLAIN_MESSAGE,
+                null,
+                options,
+                options[0]);
+
+        // Convert the selected option to an integer
+        if (selectedOption != null) {
+            return Integer.parseInt(selectedOption);
+        } else {
+            // User canceled the dialog
+            return -1;
+        }
+    }
+
+    /**
+     * Displays a dialog to get the names of players.
+     *
+     * @param numberOfPlayers The number of players.
+     * @return A list of player names.
+     */
+    public static List<String> showPlayerNameDialog(int numberOfPlayers) {
+        Set<String> playerNames = new HashSet<>();
+
+        for (int i = 1; i <= numberOfPlayers; i++) {
+            String playerName = getPlayerName(i, playerNames);
+            playerNames.add(playerName);
+        }
+
+        return List.copyOf(playerNames);
+    }
+
+    private static String getPlayerName(int playerNumber, Set<String> usedNames) {
+        String playerName;
+        do {
+            playerName = JOptionPane.showInputDialog(
+                    null,
+                    "Enter name for Player " + playerNumber + ":",
+                    "Player Name",
+                    JOptionPane.PLAIN_MESSAGE);
+
+            // Check for duplicate names
+            if (playerName != null && (playerName.trim().isEmpty() || usedNames.contains(playerName))) {
+                JOptionPane.showMessageDialog(null, "Invalid or duplicate name. Please enter a different name.");
+            }
+        } while (playerName == null || playerName.trim().isEmpty() || usedNames.contains(playerName));
+
+        return playerName;
+    }
+
 
     /**
      * Displays a message dialog with the specified message.
@@ -56,6 +126,7 @@ public class Interact {
             button.setIcon(resizedIcon);
             button.setHorizontalTextPosition(SwingConstants.CENTER);
             button.setVerticalTextPosition(SwingConstants.BOTTOM);
+            button.setBackground(Constant.BUTTON_COLOR_1);
 
             // Add action listener to the button
             button.addActionListener(new CardButtonListener(i));

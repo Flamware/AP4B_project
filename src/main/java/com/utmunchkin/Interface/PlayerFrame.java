@@ -158,6 +158,37 @@ public class PlayerFrame extends JPanel {
     }
 
     /**
+     * Update PlayerFrames when a player is removed.
+     *
+     * @param playerName      The name of the player to be removed.
+     * @param listOfPlayer    The updated list of players.
+     */
+    public static Map<String, PlayerFrame> updatePlayerFramesOnRemoval(String playerName, ListOfPlayer listOfPlayer) {
+        PlayerFrame removedFrame = playerFrames.remove(playerName);
+
+        if (removedFrame != null) {
+            // Remove the frame from the UI
+            removedFrame.setVisible(false);
+            removedFrame.getParent().remove(removedFrame);
+
+            // Reorganize the remaining frames
+            reorganizePlayerFrames();
+
+            // Repaint the UI
+            //removedFrame.getParent().revalidate();
+            //removedFrame.getParent().repaint();
+        }
+        return playerFrames;
+    }
+
+    /**
+     * Reorganize the remaining PlayerFrames after removal.
+     */
+    private static void reorganizePlayerFrames() {
+        // Logic to reorganize the frames if needed
+    }
+
+    /**
      * Gets the index of the clicked card in the player's hand.
      *
      * @return The index of the clicked card.
@@ -457,6 +488,57 @@ public class PlayerFrame extends JPanel {
             // Set the new size directly to the frame
             topPanel.setSize(800, 600);
         }
-    }    
+    }
+
+	public void updatePlayerInfo(String playerName, ListOfPlayer listOfPlayer, int playerIndex) {
+        // Mettre à jour le nom du joueur
+        this.playerName = playerName;
+    
+        // Mettre à jour la couleur d'arrière-plan en fonction de l'index du joueur
+        setBackground(getUniqueColor(playerIndex));
+    
+        // Mettre à jour la liste des cartes dans la main du joueur
+        List<Card> hand = listOfPlayer.getPlayer(playerIndex).getHand();
+    
+        // Mettre à jour les informations de chaque carte dans la main du joueur
+        for (int indexOfCard = 0; indexOfCard < hand.size(); indexOfCard++) {
+            Card card = hand.get(indexOfCard);
+            JButton cardButton = cardButtons.get(indexOfCard);
+    
+            // Mettre à jour le JTextArea avec les nouvelles informations de la carte
+            JTextArea cardInfoArea = (JTextArea) cardButton.getComponent(0); // Premier composant du JButton
+            cardInfoArea.setText(""); // Effacer le texte actuel
+            cardInfoArea.append("Name: " + card.getCardName() + "\n");
+            cardInfoArea.append("Type: " + card.getInfo().getCardType() + "\n");
+            cardInfoArea.append("Subtype: " + card.getInfo().getSubType() + "\n");
+            cardInfoArea.append("Value: " + card.getInfo().getLevelBonus() + "\n");
+            cardInfoArea.append("Desc.: " + card.getInfo().getDescription() + "\n");
+            // Ajouter d'autres attributs de carte au besoin
+    
+            // Mettre à jour l'image de la carte
+            JLabel cardImageLabel = (JLabel) cardButton.getComponent(1); // Deuxième composant du JButton
+    
+            String imagePath = "src/main/java/com/utmunchkin/gameplay/img/game/" + card.getCardName() + ".png";
+            File imageFile = new File(imagePath);
+    
+            if (imageFile.exists()) {
+                ImageIcon imageIcon = new ImageIcon(imagePath);
+                Image image = imageIcon.getImage().getScaledInstance(50, 50, Image.SCALE_SMOOTH);
+                ImageIcon resizedImageIcon = new ImageIcon(image);
+                cardImageLabel.setIcon(resizedImageIcon);
+            } else {
+                ImageIcon defaultImageIcon = new ImageIcon("src/main/java/com/utmunchkin/gameplay/img/default.png");
+                Image defaultImage = defaultImageIcon.getImage().getScaledInstance(50, 50, Image.SCALE_SMOOTH);
+                ImageIcon resizedDefaultImageIcon = new ImageIcon(defaultImage);
+                cardImageLabel.setIcon(resizedDefaultImageIcon);
+            }
+        }
+    
+        // Rafraîchir l'interface graphique
+        revalidate();
+        repaint();
+    }
+    
+        
     
 }
